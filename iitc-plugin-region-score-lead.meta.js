@@ -1,4 +1,3 @@
-
 // ==UserScript==
 // @id             iitc-plugin-region-score-lead@hansolo669
 // @name           IITC plugin: region score lead

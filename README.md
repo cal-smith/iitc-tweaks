@@ -1,4 +1,10 @@
-# iitc-region-score-tweaks
-Tweaks to IITCs region score panel
+# iitc-tweaks
+"Quality of life" enhancements for IITC
 
-[click here to install](https://www.reallyawesomedomain.com/iitc-region-score-tweaks/region-score-lead.user.js)
+Region score:
+- adds the current score lead to the region scores panel
+- ...
+
+[click here to install](https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js)
+
+More to come...

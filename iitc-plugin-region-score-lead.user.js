@@ -193,7 +193,6 @@ function regionScoreboardSuccess(data,dlg,logscale) {
   
   // and here is the actual modification
   // all of that just for this, oh well
-  console.log("megafail");
   var history = data.result.scoreHistory;
   // the lead is the sum of the difference of each checkpoint
   var lead = history.map(function(cp) { return cp[1] - cp[2] }).reduce(function(acc, diff) { return acc + diff });

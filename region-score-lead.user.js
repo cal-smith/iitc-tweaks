@@ -240,8 +240,19 @@ function regionScoreboardSuccess(data,dlg,logscale) {
     regionScoreboardSuccess(data, dlg, input.prop('checked'));
   });
 }
-// PLUGIN END //////////////////////////////////////////////////////////
+
+var setup = function() {
+  // yeah, this doesn't do anything
+  // but we still need it
 }
+    
+// PLUGIN END //////////////////////////////////////////////////////////
+setup.info = plugin_info; //add the script info data to the function as a property
+if(!window.bootPlugins) window.bootPlugins = [];
+window.bootPlugins.push(setup);
+// if IITC has already booted, immediately run the 'setup' function
+if(window.iitcLoaded && typeof setup === 'function') setup();
+} // wrapper end
 // inject code into site context
 var script = document.createElement('script');
 var info = {};

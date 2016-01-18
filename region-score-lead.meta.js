@@ -3,7 +3,7 @@
 // @name           IITC plugin: region score lead
 // @category       Tweaks
 // @version        0.0.1
-// @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
+// @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      http://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.meta.js
 // @downloadURL    http://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js
 // @description    Small modification to the region scores to show the current mu lead.

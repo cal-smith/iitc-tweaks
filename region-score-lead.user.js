@@ -153,8 +153,7 @@ var setup = function() {
   
   function regionScoreboardScoreHistoryTable(result) {
     var history = result.scoreHistory;
-    // the repeated inline styles are just temporary
-    var table = '<table class="checkpoint_table" style="width: 100%;"> \
+    var table = '<table class="checkpoint_table" style="width: 370px;"> \
       <thead><tr><th>Checkpoint</th><th>Enlightened</th><th>Resistance</th> \
       <th>Lead</th></tr></thead>';
     var lead = 0;

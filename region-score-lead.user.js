@@ -156,10 +156,10 @@ var setup = function() {
     // the repeated inline styles are just temporary
     var table = '<table class="checkpoint_table"> \
       <thead><tr> \
-      <th style="padding-left: 20px;">Checkpoint</th> \
-      <th style="padding-left: 20px;">Enlightened</th> \
-      <th style="padding-left: 20px;">Resistance</th> \
-      <th style="padding-left: 20px;">Lead</th></tr></thead>';
+      <th style="padding-left: 10px;">Checkpoint</th> \
+      <th style="padding-left: 10px;">Enlightened</th> \
+      <th style="padding-left: 10px;">Resistance</th> \
+      <th style="padding-left: 10px;">Lead</th></tr></thead>';
     var lead = 0;
     var rows = '';
     for(var i=history.length-1; i >= 0; i--) {

@@ -153,18 +153,27 @@ var setup = function() {
   
   function regionScoreboardScoreHistoryTable(result) {
     var history = result.scoreHistory;
-    var table = '<table class="checkpoint_table"><thead><tr><th>Checkpoint</th><th>Enlightened</th><th>Resistance</th></tr></thead>';
-  
-    for(var i=0; i<history.length; i++) {
-      table += '<tr><td>' + history[i][0] + '</td><td>' + digits(history[i][1]) + '</td><td>' + digits(history[i][2]) + '</td></tr>';
+    // the repeated inline styles are just temporary
+    var table = '<table class="checkpoint_table"> \
+      <thead><tr> \
+      <th style="padding-left: 20px;">Checkpoint</th> \
+      <th style="padding-left: 20px;">Enlightened</th> \
+      <th style="padding-left: 20px;">Resistance</th> \
+      <th style="padding-left: 20px;">Lead</th></tr></thead>';
+    var lead = 0;
+    var rows = '';
+    for(var i=history.length-1; i >= 0; i--) {
+      lead += history[i][1] - history[i][2];
+      var checkpoint_lead = lead < 0?'res: ' + digits(Math.abs(lead)):'enl: ' + digits(lead);
+      rows = '<tr><td>' + history[i][0] 
+          + '</td><td>' + digits(history[i][1]) 
+          + '</td><td>' + digits(history[i][2]) 
+          + '</td><td class="' + (lead < 0?'res':'enl') + '" style="text-align: left;" >' + checkpoint_lead 
+          + '</td></tr>' + rows;
     }
-  
-    table += '</table>';
-    return table;
+    return table += rows +'</table>';
   }
   
-  
-  // this is the only function that actually needed modification
   function regionScoreboardSuccess(data,dlg,logscale) {
     if (data.result === undefined) {
       return regionScoreboardFailure(dlg);
@@ -192,8 +201,6 @@ var setup = function() {
   
     }
     
-    // and here is the actual modification
-    // all of that just for this, oh well
     var history = data.result.scoreHistory;
     // the lead is the sum of the difference of each checkpoint
     var lead = history.map(function(cp) { return cp[1] - cp[2] }).reduce(function(acc, diff) { return acc + diff });

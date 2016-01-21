@@ -199,7 +199,7 @@ var setup = function() {
     
     var history = data.result.scoreHistory;
     // the lead is the sum of the difference of each checkpoint
-    var lead = history.map(function(cp) { return cp[1] - cp[2] }).reduce(function(acc, diff) { return acc + diff });
+    var lead = history.map(function(cp) { return cp[1] - cp[2] }).reduce(function(acc, diff) { return acc + diff }, 0);
     var leadinfo = '<div style="padding-left: 5px;">';
     // res lead when we sum to a negative value
     if (lead < 0) {

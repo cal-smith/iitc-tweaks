@@ -227,7 +227,8 @@ var setup = function() {
   
       var tooltip = 'CP:\t'+elem.attr('data-cp')
         + '\nEnl:\t' + digits(elem.attr('data-enl'))
-        + '\nRes:\t' + digits(elem.attr('data-res'));
+        + '\nRes:\t' + digits(elem.attr('data-res'))
+        + '\nDiff:\t' + digits(Math.abs(elem.attr('data-res')-elem.attr('data-enl')));
       elem.tooltip({
         content: convertTextToTableMagic(tooltip),
         position: {my: "center bottom", at: "center top-10"}

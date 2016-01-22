@@ -36,37 +36,40 @@ window.plugin.drawtools_sync.render = function() {
 	window.plugin.drawTools.save();
 }
 
-window.plugin.updated = function(plugin, field, ev, fullupdate) {
-	console.log('updated', plugin, field, ev);
+window.plugin.drawtools_sync.updated = function(plugin, field, ev, fullupdate) {
+	console.log('updated', plugin, field, ev, fullupdate);
+	console.log(window.plugin.drawtools_sync.layers);
 	if (field === 'layers') {
-		if (!ev.islocal) window.plugin.render();
+		// render if its a full update, or if its a remote update
+		if (fullupdate) window.plugin.drawtools_sync.render();
+		if (!ev.islocal) window.plugin.drawtools_sync.render();
 	}
 };
 
-window.plugin.initalized = function(plugin, field) {
+window.plugin.drawtools_sync.initalized = function(plugin, field) {
 	console.log('init', plugin, field);
+	console.log(window.plugin.drawtools_sync.layers);
 	if (field === 'layers') {
-		window.plugin.sync_now();
+		window.drawtools_sync.plugin.sync_now();
 	}
 };
 
-window.plugin.sync_now = function() {
+window.plugin.drawtools_sync.sync_now = function() {
 	console.log('drawtools syncing');
 	setTimeout(function() {
 		console.log("sync");
 		window.plugin.drawtools_sync.layers.drawn = localStorage['plugin-draw-tools-layer'];
 		plugin.sync.updateMap('drawtools_sync', 'layers', ['drawn']);
-	}, 100);
+		// wait for 2s so we can try and sync a few things at once
+	}, 2000);
 };
 
 var setup = function() {
 	// init after iitc has loaded
-	console.log("ayy?");
 	window.addHook('iitcLoaded', function() {
-		console.log("ayy?2");
-		window.plugin.sync.registerMapForSync('drawtools_sync', 'layers', window.plugin.updated, window.plugin.initalized);
+		window.plugin.sync.registerMapForSync('drawtools_sync', 'layers', window.plugin.drawtools_sync.updated, window.plugin.drawtools_sync.initalized);
 		// hook into drawtools updates
-		addHook('pluginDrawTools', window.plugin.sync_now);
+		addHook('pluginDrawTools', window.plugin.drawtools_sync.sync_now);
 	});
 };
 // PLUGIN END //////////////////////////////////////////////////////////

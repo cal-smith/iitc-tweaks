@@ -31,7 +31,7 @@ window.plugin.updated = function(plugin, field, ev, fullupdate) {
 	if (field === 'layers') {
 		console.log('updated', plugin, field, ev);
 		if (!ev.islocal) {
-			localStorage["plugin-draw-tools-layer"] = ev.newValue;
+			localStorage['plugin-draw-tools-layer'] = window.plugin.drawtools_sync.layers.drawn === null?"":window.plugin.drawtools_sync.layers.drawn;
 			// re-render drawn items
 			window.plugin.drawTools.load();
 		}
@@ -50,7 +50,7 @@ window.plugin.sync_now = function() {
 	setTimeout(function() {
 		console.log("sync");
 		window.plugin.drawtools_sync.layers.drawn = localStorage['plugin-draw-tools-layer'];
-		plugin.sync.updateMap('drawtools_sync', 'layers', ["drawn"]);
+		plugin.sync.updateMap('drawtools_sync', 'layers', ['drawn']);
 	}, 100);
 };
 

@@ -37,8 +37,8 @@ window.plugin.drawtools_sync.render = function() {
 }
 
 window.plugin.updated = function(plugin, field, ev, fullupdate) {
+	console.log('updated', plugin, field, ev);
 	if (field === 'layers') {
-		console.log('updated', plugin, field, ev);
 		if (!ev.islocal) window.plugin.render();
 	}
 };
@@ -55,7 +55,6 @@ window.plugin.sync_now = function() {
 	setTimeout(function() {
 		console.log("sync");
 		window.plugin.drawtools_sync.layers.drawn = localStorage['plugin-draw-tools-layer'];
-		window.plugin.drawtools_sync.render();
 		plugin.sync.updateMap('drawtools_sync', 'layers', ['drawn']);
 	}, 100);
 };

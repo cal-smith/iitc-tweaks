@@ -27,17 +27,19 @@ window.plugin.drawtools_sync = function(){};
 
 window.plugin.drawtools_sync.layers = {};
 
+window.plugin.drawtools_sync.render = function() {
+	var data = window.plugin.drawtools_sync.layers.drawn;
+	if (!data) return null;
+	// re-render drawn items
+	window.plugin.drawTools.drawnItems.clearLayers();
+	window.plugin.drawTools.import(JSON.parse(data));
+	window.plugin.drawTools.save();
+}
+
 window.plugin.updated = function(plugin, field, ev, fullupdate) {
 	if (field === 'layers') {
 		console.log('updated', plugin, field, ev);
-		if (!ev.islocal) {
-			var data = window.plugin.drawtools_sync.layers.drawn;
-			if (!data) return null;
-			// re-render drawn items
-			window.plugin.drawTools.drawnItems.clearLayers();
-			window.plugin.drawTools.import(JSON.parse(data));
-			window.plugin.drawTools.save();
-		}
+		if (!ev.islocal) window.plugin.render();
 	}
 };
 
@@ -53,6 +55,7 @@ window.plugin.sync_now = function() {
 	setTimeout(function() {
 		console.log("sync");
 		window.plugin.drawtools_sync.layers.drawn = localStorage['plugin-draw-tools-layer'];
+		window.plugin.drawtools_sync.render();
 		plugin.sync.updateMap('drawtools_sync', 'layers', ['drawn']);
 	}, 100);
 };

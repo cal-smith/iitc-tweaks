@@ -31,9 +31,10 @@ window.plugin.updated = function(plugin, field, ev, fullupdate) {
 	if (field === 'layers') {
 		console.log('updated', plugin, field, ev);
 		if (!ev.islocal) {
-			localStorage['plugin-draw-tools-layer'] = window.plugin.drawtools_sync.layers.drawn === null?"":window.plugin.drawtools_sync.layers.drawn;
+			var data = window.plugin.drawtools_sync.layers.drawn;
 			// re-render drawn items
-			window.plugin.drawTools.load();
+			window.plugin.drawTools.drawnItems.clearLayers();
+			window.plugin.drawTools.import(JSON.parse(data));
 		}
 	}
 };

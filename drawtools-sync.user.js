@@ -32,6 +32,7 @@ window.plugin.updated = function(plugin, field, ev, fullupdate) {
 		console.log('updated', plugin, field, ev);
 		if (!ev.islocal) {
 			var data = window.plugin.drawtools_sync.layers.drawn;
+			if (!data) return null;
 			// re-render drawn items
 			window.plugin.drawTools.drawnItems.clearLayers();
 			window.plugin.drawTools.import(JSON.parse(data));

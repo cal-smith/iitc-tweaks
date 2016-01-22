@@ -36,6 +36,7 @@ window.plugin.updated = function(plugin, field, ev, fullupdate) {
 			// re-render drawn items
 			window.plugin.drawTools.drawnItems.clearLayers();
 			window.plugin.drawTools.import(JSON.parse(data));
+			window.plugin.drawTools.save();
 		}
 	}
 };

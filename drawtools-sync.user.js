@@ -23,54 +23,68 @@ function wrapper(plugin_info) {
 if(typeof window.plugin !== 'function') window.plugin = function() {};
 
 // PLUGIN START ////////////////////////////////////////////////////////
-window.plugin.drawtools_sync = function(){};
-
-window.plugin.drawtools_sync.layers = {};
-
-window.plugin.drawtools_sync.render = function() {
-	var data = window.plugin.drawtools_sync.layers.drawn;
-	if (!data) return null;
-	// re-render drawn items
-	window.plugin.drawTools.drawnItems.clearLayers();
-	window.plugin.drawTools.import(JSON.parse(data));
-	window.plugin.drawTools.save();
-}
-
-window.plugin.drawtools_sync.updated = function(plugin, field, ev, fullupdate) {
-	console.log('updated', plugin, field, ev, fullupdate);
-	console.log(window.plugin.drawtools_sync.layers);
-	if (field === 'layers') {
-		// render if its a full update, or if its a remote update
-		if (fullupdate) window.plugin.drawtools_sync.render();
-		if (!ev.islocal) window.plugin.drawtools_sync.render();
-	}
-};
-
-window.plugin.drawtools_sync.initalized = function(plugin, field) {
-	console.log('init', plugin, field);
-	console.log(window.plugin.drawtools_sync.layers);
-	if (field === 'layers') {
-		window.drawtools_sync.plugin.sync_now();
-	}
-};
-
-window.plugin.drawtools_sync.sync_now = function() {
-	console.log('drawtools syncing');
-	setTimeout(function() {
-		console.log("sync");
-		window.plugin.drawtools_sync.layers.drawn = localStorage['plugin-draw-tools-layer'];
-		plugin.sync.updateMap('drawtools_sync', 'layers', ['drawn']);
-		// wait for 2s so we can try and sync a few things at once
-	}, 2000);
-};
-
-var setup = function() {
+var DTSync = function(){
+	// object to hold synced data
+	// the sync plugin will automagically grab this and populate it as data comes in
+	this.layers = {};
+	this.sync_timeout = null;
+	this.sync = window.plugin.sync;
+	this.drawTools = window.plugin.drawTools;
 	// init after iitc has loaded
 	window.addHook('iitcLoaded', function() {
-		window.plugin.sync.registerMapForSync('drawtools_sync', 'layers', window.plugin.drawtools_sync.updated, window.plugin.drawtools_sync.initalized);
+		console.log(this);
+		this.sync.registerMapForSync('drawtools_sync', 'layers', this.updated.bind(this), this.initalized.bind(this));
 		// hook into drawtools updates
-		addHook('pluginDrawTools', window.plugin.drawtools_sync.sync_now);
-	});
+		addHook('pluginDrawTools', this.delayed_sync.bind(this));
+	}.bind(this));
+};
+
+DTSync.prototype.render = function() {
+	var data = this.layers.drawn;
+	if (!data) return null;
+	// re-render drawn items
+	this.drawTools.drawnItems.clearLayers();
+	this.drawTools.import(JSON.parse(data));
+	this.drawTools.save();
+}
+
+DTSync.prototype.updated = function(plugin, field, ev, fullupdate) {
+	console.log('updated', plugin, field, ev, fullupdate);
+	console.log(this.layers);
+	if (field === 'layers') {
+		// render if its a full update, or if its a remote update
+		if (fullupdate) this.render();
+		if (!ev.islocal) this.render();
+	}
+};
+
+DTSync.prototype.initalized = function(plugin, field) {
+	console.log('init', plugin, field);
+	console.log(this.layers);
+	if (field === 'layers') {
+		this.sync_now();
+	}
+};
+
+DTSync.prototype.sync_now = function() {
+	console.log('drawtools syncing');
+	this.layers.drawn = localStorage['plugin-draw-tools-layer'];
+	this.sync.updateMap('drawtools_sync', 'layers', ['drawn']);
+};
+
+DTSync.prototype.delayed_sync = function() {
+	console.log('drawtools delayed syncing');
+	clearTimeout(this.sync_timeout);
+	this.sync_timeout = setTimeout(function() {
+		console.log("sync");
+		this.sync_now();
+		this.sync_timeout = null;
+		// wait for 2s so we can try and sync a few things at once
+	}.bind(this), 2000);
+}
+
+var setup = function() {
+	window.plugin.drawtools_sync = new DTSync();
 };
 // PLUGIN END //////////////////////////////////////////////////////////
 setup.info = plugin_info; //add the script info data to the function as a property

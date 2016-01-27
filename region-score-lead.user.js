@@ -2,7 +2,7 @@
 // @id             iitc-plugin-region-score-lead@hansolo669
 // @name           IITC plugin: region score lead
 // @category       Tweaks
-// @version        0.0.2
+// @version        0.0.3
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      http://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.meta.js
 // @downloadURL    http://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js
@@ -28,15 +28,22 @@ var setup = function() {
   window.regionScoreboard = function() {
     // TODO: rather than just load the region scores for the center of the map, display a list of regions in the current view
     // and let the user select one (with automatic selection when just one region, and limited to close enough zooms so list size is reasonable)
-    var latLng = map.getCenter();
-  
-    var latE6 = Math.round(latLng.lat*1E6);
-    var lngE6 = Math.round(latLng.lng*1E6);
-  
-    var dlg = dialog({title:'Region scores',html:'Loading regional scores...',width:450,minHeight:320});
-  
-    window.postAjax('getRegionScoreDetails', {latE6:latE6,lngE6:lngE6}, function(res){regionScoreboardSuccess(res,dlg);}, function(){regionScoreboardFailure(dlg);});
+    var latlng = map.getCenter();
+    
+    window.requestRegionScores(latlng);
   }
+
+  window.regionScoresAtRegion = function(region) {
+    var latlng = regionToLatLong(region);
+    window.requestRegionScores(latlng);
+  };
+
+  window.requestRegionScores = function(latlng) {
+    var latE6 = Math.round(latlng.lat*1E6);
+    var lngE6 = Math.round(latlng.lng*1E6);
+    var dlg = dialog({title:'Region scores',html:'Loading regional scores...',width:450,minHeight:330});
+    window.postAjax('getRegionScoreDetails', {latE6:latE6,lngE6:lngE6}, function(res){regionScoreboardSuccess(res,dlg);}, function(){regionScoreboardFailure(dlg);});
+  };
   
   function regionScoreboardFailure(dlg) {
     dlg.html('Failed to load region scores - try again');
@@ -169,6 +176,158 @@ var setup = function() {
     }
     return table += rows +'</table>';
   }
+
+  // start crazy region code
+
+  // facenames and codewords
+  var facenames = [ 'AF', 'AS', 'NR', 'PA', 'AM', 'ST' ];
+  var codewords = [
+    'ALPHA',    'BRAVO',   'CHARLIE', 'DELTA',
+    'ECHO',     'FOXTROT', 'GOLF',    'HOTEL',
+    'JULIET',   'KILO',    'LIMA',    'MIKE',
+    'NOVEMBER', 'PAPA',    'ROMEO',   'SIERRA',
+  ];
+
+  var regionToLatLong = function(region) {
+    // rot, d2xy, facenames, and codewords taken from regions.user.js
+    var rot = function(n, x, y, rx, ry) {
+      if(ry == 0) {
+        if(rx == 1) {
+          x = n-1 - x;
+          y = n-1 - y;
+        }
+
+        return [y, x];
+      }
+      return [x, y];
+    }
+    var d2xy = function(n, d) {
+      var rx, ry, s, t = d, xy = [0, 0];
+      for(s=1; s<n; s*=2) {
+        rx = 1 & (t/2);
+        ry = 1 & (t ^ rx);
+        xy = window.plugin.regions.rot(s, xy[0], xy[1], rx, ry);
+        xy[0] += s * rx;
+        xy[1] += s * ry;
+        t /= 4;
+      }
+      return xy;
+    }
+    // inspired by regions.user.js getSearchResult
+    region = region.split("-");
+    var faceId = facenames.indexOf(region[0].slice(0, 2));
+    var regionI = parseInt(region[0].slice(2)) - 1;
+    var regionJ = codewords.indexOf(region[1]);
+    var xy = d2xy(4, parseInt(region[2]));
+    regionI = (regionI << 2) + xy[0];
+    regionJ = (regionJ << 2) + xy[1];
+    var cell = (faceId % 2 == 1)
+    ? S2.S2Cell.FromFaceIJ(faceId, [regionJ,regionI], 6)
+    : S2.S2Cell.FromFaceIJ(faceId, [regionI,regionJ], 6);
+    return cell.getLatLng();
+  }
+
+  // borrowed from the "regions" plugin
+  var regionName = function(cell) {
+    // ingress does some odd things with the naming. for some faces, the i and j coords are flipped when converting
+    // (and not only the names - but the full quad coords too!). easiest fix is to create a temporary cell with the coords
+    // swapped
+    if (cell.face == 1 || cell.face == 3 || cell.face == 5) {
+      cell = S2.S2Cell.FromFaceIJ ( cell.face, [cell.ij[1], cell.ij[0]], cell.level );
+    }
+
+    // first component of the name is the face
+    var name = facenames[cell.face];
+
+    if (cell.level >= 4) {
+      // next two components are from the most signifitant four bits of the cell I/J
+      var regionI = cell.ij[0] >> (cell.level-4);
+      var regionJ = cell.ij[1] >> (cell.level-4);
+
+      name += zeroPad(regionI+1,2)+'-'+codewords[regionJ];
+    }
+
+    if (cell.level >= 6) {
+      // the final component is based on the hibbert curve for the relevant cell
+      var facequads = cell.getFaceAndQuads();
+      var number = facequads[1][4]*4+facequads[1][5];
+
+      name += '-'+zeroPad(number,2);
+    }
+
+
+    return name;
+  };
+
+  window.regionSearch = function(ev) {
+    if (ev.target.name === "regionsearch") {
+      var search = ev.target.value.toUpperCase();
+      var latlng = map.getCenter();
+      var currentregion = regionName(S2.S2Cell.FromLatLng(latlng, 6)).split("-");
+      
+      // Borrwed from the regions plugin. It's a good regex for it's purpose.
+      // This regexp is quite forgiving. Dashes are allowed between all components, each dash and leading zero is optional.
+      // All whitespace is removed in onSearch(). If the first or both the first and second component are omitted, they are
+      // replaced with the current cell's coordinates (=the cell which contains the center point of the map). If the last
+      // component is ommited, the 4x4 cell group is used.
+      var reparse = new RegExp('^(?:(?:(' + facenames.join('|') 
+        + ')(?:\\s?|-?))?((?:1[0-6])|(?:0?[1-9]))(?:\\s?|-?))?(' + codewords.join('|') 
+        + ')(?:(?:\\s?|-?)((?:1[0-5])|(?:0?\\d)))?$', 'i');
+      var matches = search.match(reparse);
+      console.log(matches);
+      var result = "";
+
+      if (matches === null) {
+        if (search.search(/^\w{1,2}\d{1,2}$/i) !== -1) {
+          for (var i = 0; i < codewords.length; i++) {
+            result += '<span>' + search + '-' + codewords[i] + '</span><br>';
+          }
+        } else if (facenames.includes(search)) {
+          for (var i = 1; i <= 16; i++) {
+            result += '<span>' + search + (i>=10?i:('0' + i)) + '</span><br>';
+          }
+        }
+      } else {
+        var face = !matches[1]?currentregion[0]:matches[1];
+        var facenum = matches[2]?matches[2]:"";
+        var region = !matches[3]?currentregion[1]:matches[3];
+        var regionnum = matches[4]?matches[4]:false;
+        if (!regionnum) {
+          for (var i = 0; i < 16; i++) {
+            var res = face + facenum + '-' + region + '-' + (i>=10?i:('0' + i));
+            result += '<a onclick="window.regionScoresAtRegion(\'' + res + '\')">' + res + '</a><br>';
+          }
+        } else {
+          var res = face + facenum + '-' + region + '-' + (regionnum>=10?regionnum:('0' + regionnum));
+          result = '<a onclick="window.regionScoresAtRegion(\'' + res + '\')">' + res + '</a><br>'
+        }
+      }
+
+      $('.regionresults').html(result);
+    }
+  }
+
+  window.regionSelector = function() {  
+    var selectorhtml = '<div style="overflow-y: scroll; height: 235px;">'
+    +'<input type="text" name="regionsearch" placeholder="search" onkeyup="window.regionSearch(event)"/>'
+    +'<div class="regionresults"></div>'
+    +'<div> possible regions: '
+    +codewords.reduce(function(html, word) { return html += ', ' + word; })
+    +'</div></div>';
+    var dlg = dialog({title:'Region selector',html:selectorhtml,width:300,minHeight:330});
+  }
+
+  var handleRegionClick = function(e) {
+    $(".leaflet-container")[0].style.cursor = "grab";
+    requestRegionScores(e.latlng);
+    map.off("click", handleRegionClick);
+  }
+
+  window.regionClickSelector = function() {
+    $(".leaflet-container")[0].style.cursor = "crosshair";
+    map.on("click", handleRegionClick);
+  }
+  // end of crazy region code
   
   function regionScoreboardSuccess(data,dlg,logscale) {
     if (data.result === undefined) {
@@ -193,7 +352,11 @@ var setup = function() {
       var teamClass = t===0 ? 'enl' : 'res';
       var teamCol = t===0 ? COLORS[TEAM_ENL] : COLORS[TEAM_RES];
       var barSize = Math.round(data.result.gameScore[t]/maxAverage*200);
-      teamRow[t] = '<tr><th class="'+teamClass+'">'+team+'</th><td class="'+teamClass+'">'+digits(data.result.gameScore[t])+'</td><td><div style="background:'+teamCol+'; width: '+barSize+'px; height: 1.3ex; border: 2px outset '+teamCol+'"> </td></tr>';
+      teamRow[t] = '<tr><th class="'+teamClass+'">'
+        +team+'</th><td class="'+teamClass+'">'
+        +digits(data.result.gameScore[t])+'</td><td><div style="background:'
+        +teamCol+'; width: '+barSize+'px; height: 1.3ex; border: 2px outset '
+        +teamCol+'"> </td></tr>';
   
     }
     
@@ -213,7 +376,9 @@ var setup = function() {
     // we need some divs to make the accordion work properly
     dlg.html('<div class="cellscore">'
            +'<b>Region scores for '+data.result.regionName+'</b>'
-           +'<div><table>'+teamRow[first]+teamRow[1-first]+'</table>'
+           +'<div><a title="Search region" onclick="window.regionSelector()">Search region</a> OR '// lets add the ability to select another region
+           +'<a title="Click to select region" onclick="window.regionClickSelector()">Select region from map</a>'
+           +'<table>'+teamRow[first]+teamRow[1-first]+'</table>'
            +leadinfo // stick our info under the score bars
            +regionScoreboardScoreHistoryChart(data.result, logscale)+'</div>'
            +'<b>Checkpoint overview</b>'
@@ -256,6 +421,7 @@ if(window.iitcLoaded && typeof setup === 'function') setup();
 // inject code into site context
 var script = document.createElement('script');
 var info = {};
-if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) info.script = { version: GM_info.script.version, name: GM_info.script.name, description: GM_info.script.description };
+if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) info.script = { 
+  version: GM_info.script.version, name: GM_info.script.name, description: GM_info.script.description };
 script.appendChild(document.createTextNode('('+ wrapper +')('+JSON.stringify(info)+');'));
 (document.body || document.head || document.documentElement).appendChild(script);

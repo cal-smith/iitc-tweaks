@@ -265,7 +265,8 @@ var setup = function() {
       var latlng = map.getCenter();
       var currentregion = regionName(S2.S2Cell.FromLatLng(latlng, 6)).split("-");
       
-      // Borrwed from the regions plugin. It's a good regex for it's purpose.
+      // Borrwed from the regions plugin and modified to allow spaces OR dashes OR nothing between keywords. 
+      // It's a good enough regex for it's purpose.
       // This regexp is quite forgiving. Dashes are allowed between all components, each dash and leading zero is optional.
       // All whitespace is removed in onSearch(). If the first or both the first and second component are omitted, they are
       // replaced with the current cell's coordinates (=the cell which contains the center point of the map). If the last
@@ -315,18 +316,27 @@ var setup = function() {
     +codewords.reduce(function(html, word) { return html += ', ' + word; })
     +'</div></div>';
     var dlg = dialog({title:'Region selector',html:selectorhtml,width:300,minHeight:330});
-  }
+  };
 
   var handleRegionClick = function(e) {
-    $(".leaflet-container")[0].style.cursor = "grab";
+    $('.leaflet-container')[0].style.cursor = 'grab';
+    this.textContent = 'Select region from map';
     requestRegionScores(e.latlng);
-    map.off("click", handleRegionClick);
-  }
+    map.off('click', handleRegionClick, this);
+  };
 
-  window.regionClickSelector = function() {
-    $(".leaflet-container")[0].style.cursor = "crosshair";
-    map.on("click", handleRegionClick);
-  }
+  window.regionClickSelector = function(ev) {
+    var target = ev.target;  
+    if ($('.leaflet-container')[0].style.cursor === 'crosshair') {
+      ev.target.textContent = 'Select region from map';
+      $('.leaflet-container')[0].style.cursor = 'grab';
+      map.off('click', handleRegionClick, target);
+      return;
+    }
+    ev.target.textContent = 'click to cancel select from map';
+    $('.leaflet-container')[0].style.cursor = 'crosshair';
+    map.on('click', handleRegionClick, target);
+  };
   // end of crazy region code
   
   function regionScoreboardSuccess(data,dlg,logscale) {
@@ -372,15 +382,30 @@ var setup = function() {
     }
   
     var first = PLAYER.team == 'RESISTANCE' ? 1 : 0;
+
+    // mucking about with auto refresh
+    var checkpoint = 5*60*60;
+    var now = Date.now()
+    // set this statically per window
+    var nextcheckpoint = (Math.floor(now / (checkpoint*1000)) * (checkpoint*1000)) + checkpoint*1000;
+    setInterval(function() {
+      if (now > nextcheckpoint) {
+        // refresh the scoreboard
+        // set nextcheckpoint to be the next checkpoint
+      }
+    }, 10000);// refresh every minute?
+
+
   
     // we need some divs to make the accordion work properly
     dlg.html('<div class="cellscore">'
            +'<b>Region scores for '+data.result.regionName+'</b>'
            +'<div><a title="Search region" onclick="window.regionSelector()">Search region</a> OR '// lets add the ability to select another region
-           +'<a title="Click to select region" onclick="window.regionClickSelector()">Select region from map</a>'
+           +'<a title="Click to select region" onclick="window.regionClickSelector(event)">Select region from map</a>'
            +'<table>'+teamRow[first]+teamRow[1-first]+'</table>'
            +leadinfo // stick our info under the score bars
-           +regionScoreboardScoreHistoryChart(data.result, logscale)+'</div>'
+           +regionScoreboardScoreHistoryChart(data.result, logscale)
+           +'checkpoint in: ' + now + '</div>'
            +'<b>Checkpoint overview</b>'
            +'<div>'+regionScoreboardScoreHistoryTable(data.result)+'</div>'
            +'<b>Top agents</b>'

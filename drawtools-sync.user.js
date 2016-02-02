@@ -72,8 +72,9 @@ DTSync.prototype.sync_now = function() {
 	this.sync.updateMap('drawtools_sync', 'layers', ['drawn']);
 };
 
-DTSync.prototype.delayed_sync = function() {
-	console.log('drawtools delayed syncing');
+DTSync.prototype.delayed_sync = function(ev) {
+	if (ev.event === 'import') return;
+	console.log('drawtools delayed syncing', ev);
 	clearTimeout(this.sync_timeout);
 	this.sync_timeout = setTimeout(function() {
 		console.log("sync");
@@ -96,6 +97,7 @@ if(window.iitcLoaded && typeof setup === 'function') setup();
 // inject code into site context
 var script = document.createElement('script');
 var info = {};
-if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) info.script = { version: GM_info.script.version, name: GM_info.script.name, description: GM_info.script.description };
+if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) info.script = { 
+	version: GM_info.script.version, name: GM_info.script.name, description: GM_info.script.description };
 script.appendChild(document.createTextNode('('+ wrapper +')('+JSON.stringify(info)+');'));
 (document.body || document.head || document.documentElement).appendChild(script);

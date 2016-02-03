@@ -43,7 +43,6 @@ var setup = function() {
     var lngE6 = Math.round(latlng.lng*1E6);
     var dlg = null;
     if (existingdlg) {
-      console.log("refresh");
       dlg = existingdlg;
       dlg.html('Loading regional scores...');
     } else {
@@ -71,7 +70,6 @@ var setup = function() {
         }
       });
     }
-    console.log(dlg);
     dlg[0].currentdlg = dlg;
     window.postAjax('getRegionScoreDetails', {latE6:latE6,lngE6:lngE6}, function(res){regionScoreboardSuccess(res,dlg);}, function(){regionScoreboardFailure(dlg);});
   };
@@ -306,7 +304,6 @@ var setup = function() {
         + ')(?:\\s?|-?))?((?:1[0-6])|(?:0?[1-9]))(?:\\s?|-?))?(' + codewords.join('|') 
         + ')(?:(?:\\s?|-?)((?:1[0-5])|(?:0?\\d)))?$', 'i');
       var matches = search.match(reparse);
-      console.log(matches);
       var result = "";
 
       if (matches === null) {

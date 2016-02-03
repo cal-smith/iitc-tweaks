@@ -38,10 +38,41 @@ var setup = function() {
     window.requestRegionScores(latlng);
   };
 
-  window.requestRegionScores = function(latlng) {
+  window.requestRegionScores = function(latlng, existingdlg) {
     var latE6 = Math.round(latlng.lat*1E6);
     var lngE6 = Math.round(latlng.lng*1E6);
-    var dlg = dialog({title:'Region scores',html:'Loading regional scores...',width:450,minHeight:330});
+    var dlg = null;
+    if (existingdlg) {
+      console.log("refresh");
+      dlg = existingdlg;
+      dlg.html('Loading regional scores...');
+    } else {
+      dlg = dialog({
+        title:'Region scores',
+        html:'Loading regional scores...',
+        width:450,
+        minHeight:330,
+        create: function() {
+          this.currentRegionLatLong = latlng;
+          // mucking about with auto refresh
+          // essentially we try to refresh the scores at some point after the next checkpoint
+          var checkpoint = 5*60*60;
+          this.nextcheckpoint = (Math.floor(Date.now() / (checkpoint*1000)) * (checkpoint*1000)) + checkpoint*1000;
+          this.cprefresh = setInterval(function() {
+            var now = Date.now();
+            if (now > this.nextcheckpoint) {
+              this.nextcheckpoint = (Math.floor(Date.now() / (checkpoint*1000)) * (checkpoint*1000)) + checkpoint*1000;
+              window.requestRegionScores(this.currentRegionLatLong, this.currentdlg);
+            }
+          }.bind(this), 10000);// refresh every minute?
+        },
+        closeCallback: function() {
+          clearInterval(this.cprefresh);
+        }
+      });
+    }
+    console.log(dlg);
+    dlg[0].currentdlg = dlg;
     window.postAjax('getRegionScoreDetails', {latE6:latE6,lngE6:lngE6}, function(res){regionScoreboardSuccess(res,dlg);}, function(){regionScoreboardFailure(dlg);});
   };
   
@@ -228,7 +259,7 @@ var setup = function() {
   }
 
   // borrowed from the "regions" plugin
-  var regionName = function(cell) {
+  function regionName(cell) {
     // ingress does some odd things with the naming. for some faces, the i and j coords are flipped when converting
     // (and not only the names - but the full quad coords too!). easiest fix is to create a temporary cell with the coords
     // swapped
@@ -257,7 +288,7 @@ var setup = function() {
 
 
     return name;
-  };
+  }
 
   window.regionSearch = function(ev) {
     if (ev.target.name === "regionsearch") {
@@ -382,20 +413,6 @@ var setup = function() {
     }
   
     var first = PLAYER.team == 'RESISTANCE' ? 1 : 0;
-
-    // mucking about with auto refresh
-    var checkpoint = 5*60*60;
-    var now = Date.now()
-    // set this statically per window
-    var nextcheckpoint = (Math.floor(now / (checkpoint*1000)) * (checkpoint*1000)) + checkpoint*1000;
-    setInterval(function() {
-      if (now > nextcheckpoint) {
-        // refresh the scoreboard
-        // set nextcheckpoint to be the next checkpoint
-      }
-    }, 10000);// refresh every minute?
-
-
   
     // we need some divs to make the accordion work properly
     dlg.html('<div class="cellscore">'
@@ -405,7 +422,7 @@ var setup = function() {
            +'<table>'+teamRow[first]+teamRow[1-first]+'</table>'
            +leadinfo // stick our info under the score bars
            +regionScoreboardScoreHistoryChart(data.result, logscale)
-           +'checkpoint in: ' + now + '</div>'
+           +'</div>'
            +'<b>Checkpoint overview</b>'
            +'<div>'+regionScoreboardScoreHistoryTable(data.result)+'</div>'
            +'<b>Top agents</b>'

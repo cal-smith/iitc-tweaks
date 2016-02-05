@@ -370,7 +370,7 @@ var setup = function() {
     var target = ev.target;  
     if ($('.leaflet-container')[0].style.cursor === 'crosshair') {
       ev.target.textContent = 'Select region from map';
-      $('.leaflet-container')[0].style.cursor = 'grab';
+      $('.leaflet-container')[0].style.cursor = '';
       map.off('click', handleRegionClick, target);
       return;
     }

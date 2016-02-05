@@ -356,11 +356,11 @@ var setup = function() {
     +'<div> possible regions: '
     +codewords.reduce(function(html, word) { return html += ', ' + word; })
     +'</div></div>';
-    var dlg = dialog({title:'Region selector',html:selectorhtml,width:300,minHeight:330});
+    var dlg = dialog({title:'Region selector',html:selectorhtml,width:300,minHeight:345});
   };
 
   var handleRegionClick = function(e) {
-    $('.leaflet-container')[0].style.cursor = 'grab';
+    $('.leaflet-container')[0].style.cursor = '';
     this.textContent = 'Select region from map';
     requestRegionScores(e.latlng);
     map.off('click', handleRegionClick, this);

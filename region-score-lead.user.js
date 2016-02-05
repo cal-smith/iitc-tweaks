@@ -38,6 +38,24 @@ var setup = function() {
     window.requestRegionScores(latlng);
   };
 
+  var nextCheckpoint = function() {
+    var checkpoint = 5*60*60;
+    var now = Date.now();
+    return (Math.floor(now / (checkpoint*1000)) * (checkpoint*1000)) + checkpoint*1000;
+  }
+
+  // globL time to next checkpoint calculator
+  setInterval(function() {
+    var nextcheckpoint = nextCheckpoint();
+    var now = Date.now();
+    var hours = Math.floor(((((nextcheckpoint-now)/1000)/60)/60)%24);
+    var mins = Math.floor((((nextcheckpoint-now)/1000)/60)%60);
+    var sec = Math.floor(((nextcheckpoint-now)/1000)%60);
+    $('.time-to-checkpoint').each(function(i, elem) {
+      elem.innerHTML = 'Next Checkpoint in: ' + hours + 'h ' + mins + 'm ' + sec + 's';
+    });
+  }, 1000);
+
   window.requestRegionScores = function(latlng, existingdlg) {
     var latE6 = Math.round(latlng.lat*1E6);
     var lngE6 = Math.round(latlng.lng*1E6);
@@ -50,32 +68,27 @@ var setup = function() {
         title:'Region scores',
         html:'Loading regional scores...',
         width:450,
-        minHeight:330,
+        minHeight:345,
         create: function() {
           this.currentRegionLatLong = latlng;
           // mucking about with auto refresh
           // essentially we try to refresh the scores at some point after the next checkpoint
-          var checkpoint = 5*60*60;
-          this.nextcheckpoint = (Math.floor(Date.now() / (checkpoint*1000)) * (checkpoint*1000)) + checkpoint*1000;
-          this.cprefresh = setInterval(function() {
-            var now = Date.now();
-            if (now > this.nextcheckpoint) {
-              this.nextcheckpoint = (Math.floor(Date.now() / (checkpoint*1000)) * (checkpoint*1000)) + checkpoint*1000;
-              window.requestRegionScores(this.currentRegionLatLong, this.currentdlg);
-            }
-          }.bind(this), 10000);// refresh every minute?
-        },
-        closeCallback: function() {
-          clearInterval(this.cprefresh);
+          setTimeout(function() {
+            window.requestRegionScores(this.currentRegionLatLong, this.currentdlg);
+          }.bind(this),  nextCheckpoint()-Date.now());
         }
       });
     }
     dlg[0].currentdlg = dlg;
     window.postAjax('getRegionScoreDetails', {latE6:latE6,lngE6:lngE6}, function(res){regionScoreboardSuccess(res,dlg);}, function(){regionScoreboardFailure(dlg);});
   };
+
+  window.requestRegionScoresRetry = function(ev) {
+    window.requestRegionScores(ev.target.parentNode.currentRegionLatLong, ev.target.parentNode.currentdlg);
+  };
   
   function regionScoreboardFailure(dlg) {
-    dlg.html('Failed to load region scores - try again');
+    dlg.html('Failed to load region scores - <a onclick="window.requestRegionScoresRetry(event)">try again</a>');
   }
   
   
@@ -320,7 +333,7 @@ var setup = function() {
         var face = !matches[1]?currentregion[0]:matches[1];
         var facenum = matches[2]?matches[2]:"";
         var region = !matches[3]?currentregion[1]:matches[3];
-        var regionnum = matches[4]?matches[4]:false;
+        var regionnum = matches[4]?parseInt(matches[4]):false;
         if (!regionnum) {
           for (var i = 0; i < 16; i++) {
             var res = face + facenum + '-' + region + '-' + (i>=10?i:('0' + i));
@@ -419,7 +432,7 @@ var setup = function() {
            +'<table>'+teamRow[first]+teamRow[1-first]+'</table>'
            +leadinfo // stick our info under the score bars
            +regionScoreboardScoreHistoryChart(data.result, logscale)
-           +'</div>'
+           +'<div class="time-to-checkpoint">Next Checkpoint in: </div></div>'
            +'<b>Checkpoint overview</b>'
            +'<div>'+regionScoreboardScoreHistoryTable(data.result)+'</div>'
            +'<b>Top agents</b>'

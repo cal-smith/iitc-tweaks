@@ -38,13 +38,32 @@ var setup = function() {
     window.requestRegionScores(latlng);
   };
 
-  var nextCheckpoint = function() {
+  window.nextCheckpoint = function() {
     var checkpoint = 5*60*60;
     var now = Date.now();
     return (Math.floor(now / (checkpoint*1000)) * (checkpoint*1000)) + checkpoint*1000;
   }
 
+  // apprently this doesn't exist or something?
+  // I have no idea, but I kinda need this
+  // borrowed from hooks.js
+  if (!window.removeHook) {
+    // callback must the SAME function to be unregistered.
+    window.removeHook = function(event, callback) {
+      if (typeof callback !== 'function') throw('Callback must be a function.');
+
+      if (window._hooks[event]) {
+        var index = window._hooks[event].indexOf(callback);
+        if(index == -1)
+          console.warn('Callback wasn\'t registered for this event.');
+        else
+          window._hooks[event].splice(index, 1);
+      }
+    }
+  }
+
   // globL time to next checkpoint calculator
+  var currentcheckpoint = nextCheckpoint();
   setInterval(function() {
     var nextcheckpoint = nextCheckpoint();
     var now = Date.now();
@@ -52,9 +71,14 @@ var setup = function() {
     var mins = Math.floor((((nextcheckpoint-now)/1000)/60)%60);
     var sec = Math.floor(((nextcheckpoint-now)/1000)%60);
     $('.time-to-checkpoint').each(function(i, elem) {
+      if (now > currentcheckpoint) {
+        currentcheckpoint = nextcheckpoint;
+        runHooks('pluginRegionScores', {event:'checkpoint'});
+      }
       elem.innerHTML = 'Next Checkpoint in: ' + hours + 'h ' + mins + 'm ' + sec + 's';
     });
   }, 1000);
+  pluginCreateHook('pluginRegionScores');
 
   window.requestRegionScores = function(latlng, existingdlg) {
     var latE6 = Math.round(latlng.lat*1E6);
@@ -66,16 +90,21 @@ var setup = function() {
     } else {
       dlg = dialog({
         title:'Region scores',
-        html:'Loading regional scores...',
+        html:'Loading regional scores wat...',
         width:450,
         minHeight:345,
         create: function() {
           this.currentRegionLatLong = latlng;
+          var _this = this;
+          this.refreshRegionScores = function() {
+            window.requestRegionScores(_this.currentRegionLatLong, _this.currentdlg);
+          };
           // mucking about with auto refresh
           // essentially we try to refresh the scores at some point after the next checkpoint
-          setTimeout(function() {
-            window.requestRegionScores(this.currentRegionLatLong, this.currentdlg);
-          }.bind(this),  nextCheckpoint()-Date.now());
+          window.addHook('pluginRegionScores', this.refreshRegionScores);
+        },
+        close: function() {
+         window.removeHook('pluginRegionScores', this.refreshRegionScores);
         }
       });
     }

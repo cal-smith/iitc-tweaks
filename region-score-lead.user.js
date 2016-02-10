@@ -42,7 +42,7 @@ var setup = function() {
     var checkpoint = 5*60*60;
     var now = Date.now();
     return (Math.floor(now / (checkpoint*1000)) * (checkpoint*1000)) + checkpoint*1000;
-  }
+  };
 
   // apprently this doesn't exist or something?
   // I have no idea, but I kinda need this
@@ -62,20 +62,26 @@ var setup = function() {
     }
   }
 
-  // globL time to next checkpoint calculator
-  var currentcheckpoint = nextCheckpoint();
-  setInterval(function() {
+  window.formattedTimeToCheckpoint = function() {
     var nextcheckpoint = nextCheckpoint();
     var now = Date.now();
     var hours = Math.floor(((((nextcheckpoint-now)/1000)/60)/60)%24);
     var mins = Math.floor((((nextcheckpoint-now)/1000)/60)%60);
     var sec = Math.floor(((nextcheckpoint-now)/1000)%60);
+    return 'Next Checkpoint in: ' + hours + 'h ' + mins + 'm ' + sec + 's';
+  };
+
+  // global time to next checkpoint
+  var currentcheckpoint = nextCheckpoint();
+  setInterval(function() {
+    var nextcheckpoint = nextCheckpoint();
+    var now = Date.now();
     $('.time-to-checkpoint').each(function(i, elem) {
       if (now > currentcheckpoint) {
         currentcheckpoint = nextcheckpoint;
         runHooks('pluginRegionScores', {event:'checkpoint'});
       }
-      elem.innerHTML = 'Next Checkpoint in: ' + hours + 'h ' + mins + 'm ' + sec + 's';
+      elem.innerHTML = formattedTimeToCheckpoint();
     });
   }, 1000);
   pluginCreateHook('pluginRegionScores');
@@ -90,7 +96,7 @@ var setup = function() {
     } else {
       dlg = dialog({
         title:'Region scores',
-        html:'Loading regional scores wat...',
+        html:'Loading regional scores...',
         width:450,
         minHeight:345,
         create: function() {
@@ -103,7 +109,7 @@ var setup = function() {
           // essentially we try to refresh the scores at some point after the next checkpoint
           window.addHook('pluginRegionScores', this.refreshRegionScores);
         },
-        close: function() {
+        closeCallback: function() {
          window.removeHook('pluginRegionScores', this.refreshRegionScores);
         }
       });
@@ -349,27 +355,31 @@ var setup = function() {
       var result = "";
 
       if (matches === null) {
-        if (search.search(/^\w{1,2}\d{1,2}$/i) !== -1) {
-          for (var i = 0; i < codewords.length; i++) {
-            result += '<span>' + search + '-' + codewords[i] + '</span><br>';
-          }
-        } else if (facenames.includes(search)) {
+        var searches = search.match(/^(\w{1,2})(\d{1,2})$/i);
+        if (facenames.includes(search)) {
           for (var i = 1; i <= 16; i++) {
             result += '<span>' + search + (i>=10?i:('0' + i)) + '</span><br>';
+          }
+        } else if (searches !== null) {
+          console.log(searches);
+          var num = searches[2]?parseInt(searches[2]):'';
+          var word = searches[1]?searches[1]:'';
+          for (var i = 0; i < codewords.length; i++) {
+            result += '<span>' + word + (num>=10?num:'0'+num) + '-' + codewords[i] + '</span><br>';
           }
         }
       } else {
         var face = !matches[1]?currentregion[0]:matches[1];
-        var facenum = matches[2]?matches[2]:"";
+        var facenum = matches[2]?parseInt(matches[2]):false;
         var region = !matches[3]?currentregion[1]:matches[3];
         var regionnum = matches[4]?parseInt(matches[4]):false;
         if (!regionnum) {
           for (var i = 0; i < 16; i++) {
-            var res = face + facenum + '-' + region + '-' + (i>=10?i:('0' + i));
+            var res = face + (facenum?(facenum>=10?facenum:'0'+facenum):'') + '-' + region + '-' + (i>=10?i:('0'+i));
             result += '<a onclick="window.regionScoresAtRegion(\'' + res + '\')">' + res + '</a><br>';
           }
         } else {
-          var res = face + facenum + '-' + region + '-' + (regionnum>=10?regionnum:('0' + regionnum));
+          var res = face + (facenum?(facenum>=10?facenum:'0'+facenum):'') + '-' + region + '-' + (regionnum>=10?regionnum:('0' + regionnum));
           result = '<a onclick="window.regionScoresAtRegion(\'' + res + '\')">' + res + '</a><br>'
         }
       }
@@ -379,8 +389,8 @@ var setup = function() {
   }
 
   window.regionSelector = function() {  
-    var selectorhtml = '<div style="overflow-y: scroll; height: 235px;">'
-    +'<input type="text" name="regionsearch" placeholder="search" onkeyup="window.regionSearch(event)"/>'
+    var selectorhtml = '<input style="width:100%;" type="text" name="regionsearch" placeholder="search" onkeyup="window.regionSearch(event)"/>'
+    +'<div style="overflow-y: scroll; height: 241px; padding-top: 5px;">'
     +'<div class="regionresults"></div>'
     +'<div> possible regions: '
     +codewords.reduce(function(html, word) { return html += ', ' + word; })
@@ -461,7 +471,7 @@ var setup = function() {
            +'<table>'+teamRow[first]+teamRow[1-first]+'</table>'
            +leadinfo // stick our info under the score bars
            +regionScoreboardScoreHistoryChart(data.result, logscale)
-           +'<div class="time-to-checkpoint">Next Checkpoint in: </div></div>'
+           +'<div class="time-to-checkpoint">'+ formattedTimeToCheckpoint() +'</div></div>'
            +'<b>Checkpoint overview</b>'
            +'<div>'+regionScoreboardScoreHistoryTable(data.result)+'</div>'
            +'<b>Top agents</b>'

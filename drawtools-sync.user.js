@@ -30,6 +30,7 @@ var DTSync = function(){
 	this.sync_timeout = null;
 	this.sync = window.plugin.sync;
 	this.drawTools = window.plugin.drawTools;
+	this.syncloaded = false;
 	// init after iitc has loaded
 	window.addHook('iitcLoaded', function() {
 		console.log(this);
@@ -40,17 +41,19 @@ var DTSync = function(){
 };
 
 DTSync.prototype.render = function() {
+	console.log('rendering');
 	var data = this.layers.drawn;
-	if (!data) return null;
+	if (!data) return;
 	// re-render drawn items
-	this.drawTools.drawnItems.clearLayers();
-	this.drawTools.import(JSON.parse(data));
-	this.drawTools.save();
+	//this.drawTools.drawnItems.clearLayers();
+	//this.drawTools.import(JSON.parse(data));
+	//this.drawTools.save();
+	localStorage['plugin-draw-tools-layer'] = data;
+	this.drawTools.load();
 }
 
 DTSync.prototype.updated = function(plugin, field, ev, fullupdate) {
-	console.log('updated', plugin, field, ev, fullupdate);
-	console.log(this.layers);
+	console.log('updated', plugin, field, ev, fullupdate, this.layers);
 	if (field === 'layers') {
 		// render if its a full update, or if its a remote update
 		if (fullupdate) this.render();
@@ -59,29 +62,32 @@ DTSync.prototype.updated = function(plugin, field, ev, fullupdate) {
 };
 
 DTSync.prototype.initalized = function(plugin, field) {
-	console.log('init', plugin, field);
-	console.log(this.layers);
+	console.log('init', plugin, field, this.layers);
 	if (field === 'layers') {
-		this.sync_now();
+		this.syncloaded = true;
+		this.delayed_sync();
 	}
 };
 
 DTSync.prototype.sync_now = function() {
+	if(!this.syncloaded) return;
+	if(!localStorage['plugin-draw-tools-layer']||JSON.parse(localStorage['plugin-draw-tools-layer']).length === 0) return;
 	console.log('drawtools syncing');
-	this.layers.drawn = localStorage['plugin-draw-tools-layer'];
+	this.layers.drawn = JSON.parse(localStorage['plugin-draw-tools-layer']);
 	this.sync.updateMap('drawtools_sync', 'layers', ['drawn']);
 };
 
 DTSync.prototype.delayed_sync = function(ev) {
+	if(!this.syncloaded) return;
 	if (ev.event === 'import') return;
 	console.log('drawtools delayed syncing', ev);
 	clearTimeout(this.sync_timeout);
 	this.sync_timeout = setTimeout(function() {
 		console.log("sync");
-		this.sync_now();
 		this.sync_timeout = null;
-		// wait for 2s so we can try and sync a few things at once
-	}.bind(this), 2000);
+		this.sync_now();
+		// wait for 7s so we can try and sync a few things at once
+	}.bind(this), 7000);
 }
 
 var setup = function() {

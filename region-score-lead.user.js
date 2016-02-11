@@ -26,10 +26,7 @@ if(typeof window.plugin !== 'function') window.plugin = function() {};
 var setup = function() {
 // we stick all this stuff in the setup function to ensure it loads *after* IITC has booted
   window.regionScoreboard = function() {
-    // TODO: rather than just load the region scores for the center of the map, display a list of regions in the current view
-    // and let the user select one (with automatic selection when just one region, and limited to close enough zooms so list size is reasonable)
     var latlng = map.getCenter();
-    
     window.requestRegionScores(latlng);
   }
 
@@ -44,7 +41,7 @@ var setup = function() {
     return (Math.floor(now / (checkpoint*1000)) * (checkpoint*1000)) + checkpoint*1000;
   };
 
-  // apprently this doesn't exist or something?
+  // apprently this doesn't exist sometimes?
   // I have no idea, but I kinda need this
   // borrowed from hooks.js
   if (!window.removeHook) {
@@ -105,8 +102,6 @@ var setup = function() {
           this.refreshRegionScores = function() {
             window.requestRegionScores(_this.currentRegionLatLong, _this.currentdlg);
           };
-          // mucking about with auto refresh
-          // essentially we try to refresh the scores at some point after the next checkpoint
           window.addHook('pluginRegionScores', this.refreshRegionScores);
         },
         closeCallback: function() {

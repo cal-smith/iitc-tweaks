@@ -41,18 +41,18 @@ window.plugin.drawtools_sync.render = function() {
 	var data = window.plugin.drawtools_sync.layers.drawn;
 	if (!data) return;
 	// re-render drawn items
-	//this.drawTools.drawnItems.clearLayers();
-	//this.drawTools.import(JSON.parse(data));
-	//this.drawTools.save();
-	localStorage['plugin-draw-tools-layer'] = data;
-	window.plugin.drawtools_sync.drawTools.load();
+	window.plugin.drawTools.drawnItems.clearLayers();
+	window.plugin.drawTools.import(JSON.parse(data));
+	window.plugin.drawTools.save();
 };
 
 window.plugin.drawtools_sync.syncCallback = function(plugin, field, ev, fullupdate) {
+	if(!window.plugin.drawtools_sync.syncloaded) return;
 	console.log('updated', plugin, field, ev, fullupdate, window.plugin.drawtools_sync.layers);
 	if (field === 'layers') {
 		// render if its a full update, or if its a remote update
 		if (fullupdate) window.plugin.drawtools_sync.render();
+		if (!ev) return;
 		if (!ev.islocal) window.plugin.drawtools_sync.render();
 	}
 };
@@ -61,14 +61,13 @@ window.plugin.drawtools_sync.syncInitialed = function(plugin, field) {
 	console.log('init', plugin, field, window.plugin.drawtools_sync.layers);
 	if (field === 'layers') {
 		window.plugin.drawtools_sync.syncloaded = true;
-		//window.plugin.drawtools_sync.delayed_sync();
 		addHook('pluginDrawTools', window.plugin.drawtools_sync.delayed_sync);
 	}
 };
 
 window.plugin.drawtools_sync.sync_now = function() {
 	if(!window.plugin.drawtools_sync.syncloaded) return;
-	if(!localStorage['plugin-draw-tools-layer']||JSON.parse(localStorage['plugin-draw-tools-layer']).length === 0) return;
+	if(!localStorage['plugin-draw-tools-layer']) return;
 	console.log('drawtools syncing');
 	window.plugin.drawtools_sync.layers.drawn = localStorage['plugin-draw-tools-layer'];
 	window.plugin.sync.updateMap('drawtools_sync', 'layers', ['drawn']);

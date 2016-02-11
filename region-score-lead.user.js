@@ -121,6 +121,39 @@ var setup = function() {
     dlg.html('Failed to load region scores - <a onclick="window.requestRegionScoresRetry(event)">try again</a>');
   }
   
+  // function to compute a simple linear regression for both teams
+  function simpleLinearRegression(items) {
+    console.log(items);
+    var len = items.length-1;
+    var sumx = 0;
+    var sumxsq = 0;
+    var sumyres = 0;
+    var sumyenl = 0;
+    var sumprodres = 0;
+    var sumprodenl = 0;
+    for (var i = 1; i < items.length; i++) {
+      sumyenl += parseInt(items[i][0]);
+      sumyres += parseInt(items[i][1]);
+      sumprodenl += i * parseInt(items[i][0]);
+      sumprodres += i * parseInt(items[i][1]);
+      sumx += i;
+      sumxsq += i*i;
+    }
+    console.log(sumx, sumxsq, sumyres, sumprodres);
+
+    // a = (sum_of_products - (sum_x * sum_y) / length) / (sum_x_squared - ((sum_x ** 2) / length))
+    // b = (sum_y - a * sum_x) / length
+    // return a, b
+    var a = function(sxs, sx, sy, sp, len) { return (sp - (sx*sy)/len)/(sxs-((sx*sx)/len)); };
+    var b = function(sy, sx, alpha, len) { return (sy - alpha * sx)/len; };
+    return {enl: [
+        a(sumxsq, sumx, sumyenl, sumprodenl, len),
+        b(sumyenl, sumx, a(sumxsq, sumx, sumyenl, sumprodenl, len), len)], 
+      res: [
+        a(sumxsq, sumx, sumyres,sumprodres, len),  
+        b(sumyres, sumx, a(sumxsq, sumx, sumyres,sumprodres, len), len)
+      ]};
+  }
   
   function regionScoreboardScoreHistoryChart(result, logscale) {
     // svg area 400x130. graph area 350x100, offset to 40,10
@@ -134,7 +167,7 @@ var setup = function() {
       max = Math.max(max, result.scoreHistory[i][1], result.scoreHistory[i][2]); //note: index 0 is the checkpoint number here
       items[result.scoreHistory[i][0]] = [result.scoreHistory[i][1], result.scoreHistory[i][2]];
     }
-  
+
     // scale up maximum a little, so graph isn't squashed right against upper edge
     max *= 1.09;
   
@@ -142,6 +175,17 @@ var setup = function() {
     var scale = logscale
       ? function(y) { return  10 - Math.log10(Math.max(0.001,y/max)) / 3 * 100; }
       : function(y) { return 110-y/max*100; };
+    
+    // calculate and generate linear regressions
+    var linregs = simpleLinearRegression(items);
+    var resy1 = linregs.res[0] * 1 + linregs.res[1];
+    var resy2 = linregs.res[0] * (items.length-1) + linregs.res[1];
+    var enly1 = linregs.enl[0] * 1 + linregs.enl[1];
+    var enly2 = linregs.enl[0] * (items.length-1) + linregs.enl[1];
+    var x1 = 0*10+40
+    var x2 = items.length*10+40;
+    var regressions =  '<line x1="'+x1+'" y1="'+scale(resy1)+'" x2="'+x2+'" y2="'+scale(resy2)+'" stroke="'+COLORS[TEAM_RES]+'" stroke-width="1" />'
+                      +'<line x1="'+x1+'" y1="'+scale(enly1)+'" x2="'+x2+'" y2="'+scale(enly2)+'" stroke="'+COLORS[TEAM_ENL]+'" stroke-width="1" />'
   
     var teamPaths = [[],[]];
     var otherSvg = [];
@@ -222,6 +266,7 @@ var setup = function() {
              +'<rect x="0" y="0" width="400" height="130" stroke="#FFCE00" fill="#08304E" />'
              +paths
              +otherSvg.join('')
+             +regressions
              +'<foreignObject height="18" width="45" y="111" x="0" class="node"><label title="Logarithmic scale">'
              +'<input type="checkbox" class="logscale" style="height:auto;padding:0;vertical-align:middle"'+(logscale?' checked':'')+'/>'
              +'log</label></foreignObject>'

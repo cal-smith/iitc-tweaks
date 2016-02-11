@@ -23,75 +23,74 @@ function wrapper(plugin_info) {
 if(typeof window.plugin !== 'function') window.plugin = function() {};
 
 // PLUGIN START ////////////////////////////////////////////////////////
-var setup = function() {
-	// object to hold synced data
-	// the sync plugin will automagically grab this and populate it as data comes in
-	window.plugin.drawtools_sync.layers = {};
-	window.plugin.drawtools_sync.sync_timeout = null;
-	window.plugin.drawtools_sync.sync = window.plugin.sync;
-	window.plugin.drawtools_sync.drawTools = window.plugin.drawTools;
-	window.plugin.drawtools_sync.syncloaded = false;
-	// init after iitc has loaded
-	window.addHook('iitcLoaded', function() {
-		console.log(window.plugin.drawtools_sync);
-		window.plugin.drawtools_sync.sync.registerMapForSync('drawtools_sync', 
-			'layers', 
-			window.plugin.drawtools_sync.updated, 
-			window.plugin.drawtools_sync.initalized);
-		// hook into drawtools updates
+window.plugin.drawtools_sync = function() {};
+// object to hold synced data
+// the sync plugin will automagically grab this and populate it as data comes in
+window.plugin.drawtools_sync.layers = {};
+window.plugin.drawtools_sync.sync_timeout = null;
+window.plugin.drawtools_sync.sync = window.plugin.sync;
+window.plugin.drawtools_sync.drawTools = window.plugin.drawTools;
+window.plugin.drawtools_sync.syncloaded = false;
+
+window.plugin.drawtools_sync.registerFieldForSyncing = function() {
+	window.plugin.sync.registerMapForSync('drawtools_sync', 'layers', window.plugin.drawtools_sync.syncCallback, window.plugin.drawtools_sync.syncInitialed);
+};
+
+window.plugin.drawtools_sync.render = function() {
+	console.log('rendering');
+	var data = window.plugin.drawtools_sync.layers.drawn;
+	if (!data) return;
+	// re-render drawn items
+	//this.drawTools.drawnItems.clearLayers();
+	//this.drawTools.import(JSON.parse(data));
+	//this.drawTools.save();
+	localStorage['plugin-draw-tools-layer'] = data;
+	window.plugin.drawtools_sync.drawTools.load();
+};
+
+window.plugin.drawtools_sync.syncCallback = function(plugin, field, ev, fullupdate) {
+	console.log('updated', plugin, field, ev, fullupdate, window.plugin.drawtools_sync.layers);
+	if (field === 'layers') {
+		// render if its a full update, or if its a remote update
+		if (fullupdate) window.plugin.drawtools_sync.render();
+		if (!ev.islocal) window.plugin.drawtools_sync.render();
+	}
+};
+
+window.plugin.drawtools_sync.syncInitialed = function(plugin, field) {
+	console.log('init', plugin, field, window.plugin.drawtools_sync.layers);
+	if (field === 'layers') {
+		window.plugin.drawtools_sync.syncloaded = true;
+		//window.plugin.drawtools_sync.delayed_sync();
 		addHook('pluginDrawTools', window.plugin.drawtools_sync.delayed_sync);
-	});
-
-	window.plugin.drawtools_sync.render = function() {
-		console.log('rendering');
-		var data = window.plugin.drawtools_sync.layers.drawn;
-		if (!data) return;
-		// re-render drawn items
-		//this.drawTools.drawnItems.clearLayers();
-		//this.drawTools.import(JSON.parse(data));
-		//this.drawTools.save();
-		localStorage['plugin-draw-tools-layer'] = data;
-		window.plugin.drawtools_sync.drawTools.load();
 	}
+};
 
-	window.plugin.drawtools_sync.updated = function(plugin, field, ev, fullupdate) {
-		console.log('updated', plugin, field, ev, fullupdate, window.plugin.drawtools_sync.layers);
-		if (field === 'layers') {
-			// render if its a full update, or if its a remote update
-			if (fullupdate) window.plugin.drawtools_sync.render();
-			if (!ev.islocal) window.plugin.drawtools_sync.render();
-		}
-	};
+window.plugin.drawtools_sync.sync_now = function() {
+	if(!window.plugin.drawtools_sync.syncloaded) return;
+	if(!localStorage['plugin-draw-tools-layer']||JSON.parse(localStorage['plugin-draw-tools-layer']).length === 0) return;
+	console.log('drawtools syncing');
+	window.plugin.drawtools_sync.layers.drawn = localStorage['plugin-draw-tools-layer'];
+	window.plugin.sync.updateMap('drawtools_sync', 'layers', ['drawn']);
+};
 
-	window.plugin.drawtools_sync.initalized = function(plugin, field) {
-		console.log('init', plugin, field, window.plugin.drawtools_sync.layers);
-		if (field === 'layers') {
-			window.plugin.drawtools_sync.syncloaded = true;
-			window.plugin.drawtools_sync.delayed_sync();
-		}
-	};
+window.plugin.drawtools_sync.delayed_sync = function(ev) {
+	if(!window.plugin.drawtools_sync.syncloaded) return;
+	if (ev.event === 'import') return;
+	console.log('drawtools delayed syncing', ev);
+	clearTimeout(window.plugin.drawtools_sync.sync_timeout);
+	window.plugin.drawtools_sync.sync_timeout = setTimeout(function() {
+		console.log("sync");
+		window.plugin.drawtools_sync.sync_timeout = null;
+		window.plugin.drawtools_sync.sync_now();
+		// wait for 7s so we can try and sync a few things at once
+	}, 7000);
+};
 
-	window.plugin.drawtools_sync.sync_now = function() {
-		if(!window.plugin.drawtools_sync.syncloaded) return;
-		if(!localStorage['plugin-draw-tools-layer']||JSON.parse(localStorage['plugin-draw-tools-layer']).length === 0) return;
-		console.log('drawtools syncing');
-		window.plugin.drawtools_sync.layers.drawn = JSON.parse(localStorage['plugin-draw-tools-layer']);
-		window.plugin.drawtools_sync.sync.updateMap('drawtools_sync', 'layers', ['drawn']);
-	};
-
-	window.plugin.drawtools_sync.delayed_sync = function(ev) {
-		if(!window.plugin.drawtools_sync.syncloaded) return;
-		if (ev.event === 'import') return;
-		console.log('drawtools delayed syncing', ev);
-		clearTimeout(window.plugin.drawtools_sync.sync_timeout);
-		window.plugin.drawtools_sync.sync_timeout = setTimeout(function() {
-			console.log("sync");
-			window.plugin.drawtools_sync.sync_timeout = null;
-			window.plugin.drawtools_sync.sync_now();
-			// wait for 7s so we can try and sync a few things at once
-		}, 7000);
-	}
-}};
+var setup = function() {
+	console.log("drawsync");
+	window.addHook('iitcLoaded', window.plugin.drawtools_sync.registerFieldForSyncing);
+};
 // PLUGIN END //////////////////////////////////////////////////////////
 setup.info = plugin_info; //add the script info data to the function as a property
 if(!window.bootPlugins) window.bootPlugins = [];

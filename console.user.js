@@ -35,7 +35,19 @@ var setup = function() {
     window.console = {
         _log: function(args) {
             var history = window.plugin.console.history;
-            history.push(Array.prototype.slice.call(args).join(" ") + '\n');
+            history.push(Array.prototype.slice.call(args).map(function(x) {
+                if (typeof x === 'object') {
+                    var seen = [];
+                    return JSON.stringify(x, function(key, val) {
+                        if (val != null && typeof val == 'object') {
+                            if (seen.indexOf(val) >= 0 || seen.length > 10) return;
+                            seen.push(val);
+                        }
+                        return val;
+                    }, ' ');
+                }
+                return x;
+            }).join(" ") + '\n');
             var out = document.querySelector('#out');
             if (out) {
                 out.textContent += history[history.length-1];
@@ -61,7 +73,9 @@ var setup = function() {
         warn: function() {
             this._log(arguments);
             oldConsole.warn.apply(oldConsole, arguments);
-        }
+        },
+        debug: function () { this.log.apply(this, arguments); },
+        exception: function() { this.error.apply(this, arguments); }
     };
 
     window.plugin.console.eval = function(ev) {
@@ -82,7 +96,10 @@ var setup = function() {
             }
         } else if(ev.code === 'ArrowDown') {
             var commands = plugin.console.commands;
-            if (commands.length > 0) {
+            if (plugin.console.commandsidx == 1) {
+                ev.target.value = '';
+                plugin.console.commandsidx = 0;
+            } else if (commands.length > 0) {
                 if (plugin.console.commandsidx > 1) plugin.console.commandsidx--;
                 ev.target.value = commands[commands.length-plugin.console.commandsidx];
             }

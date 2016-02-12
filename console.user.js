@@ -99,6 +99,8 @@ var setup = function() {
             minHeight:500
         });
         document.querySelector('#out').textContent = plugin.console.history.reduce(function(x, y) { return x += y; });
+        var out = document.querySelector('#out');
+        out.scrollTop = out.scrollHeight - out.offsetHeight;
     };
 };
 // PLUGIN END //////////////////////////////////////////////////////////

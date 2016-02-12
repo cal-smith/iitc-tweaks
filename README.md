@@ -13,11 +13,18 @@ Region score:
 [click here to install](https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js)  
 [click here for the current development version](https://rawgit.com/hansolo669/iitc-tweaks/master/region-score-lead.user.js)
 
+console:
+- pipes the standard console back into an iitc window
+- input box for commands; complete with history (arrow up/arrow down)
+
+[click here to install](https://www.reallyawesomedomain.com/iitc-tweaks/console.user.js)  
+[click here for the current development version](https://rawgit.com/hansolo669/iitc-tweaks/master/console.user.js)
+
 Draw tools sync:
 - attempts to sync drawn items via the "sync" plugin
 - experimental, shouldn't (and likely wont) eat your drawtools, but who knows right?
 - possibly horribly broken
 
-[click here to the current development version](https://rawgit.com/hansolo669/iitc-tweaks/master/drawtools-sync.user.js)
+[click here for the current development version](https://rawgit.com/hansolo669/iitc-tweaks/master/drawtools-sync.user.js)
 
 More to come...

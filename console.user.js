@@ -67,7 +67,10 @@ var setup = function() {
     window.plugin.console.eval = function(ev) {
         //console.log(ev);
         if(ev.code === 'Enter') {
-            console.info(eval(ev.target.value));
+            console.log(' -> ' + ev.target.value);
+            var res = '';
+            try { res = eval(ev.target.value) } catch(e) { res = e; }
+            console.log(' <- ' + res);
             plugin.console.commands.push(ev.target.value);
             ev.target.value = ""
             plugin.console.commandsidx = 0;

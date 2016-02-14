@@ -54,7 +54,7 @@ var setup = function() {
                 var scroll = out.scrollHeight - out.offsetHeight;
                 var scrolltop = out.scrollTop;
                 if (!(scrolltop < scroll - 100 && scroll > 100)) {
-                    out.scrollTop = scroll;
+                    out.scrollTop = out.scrollHeight;
                 }
             }
         },

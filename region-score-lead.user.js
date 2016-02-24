@@ -59,12 +59,11 @@ var setup = function() {
     }
   }
 
-  window.formattedTimeToCheckpoint = function() {
-    var nextcheckpoint = nextCheckpoint();
+  window.formattedTimeToCheckpoint = function(checkpointms) {
     var now = Date.now();
-    var hours = Math.floor(((((nextcheckpoint-now)/1000)/60)/60)%24);
-    var mins = Math.floor((((nextcheckpoint-now)/1000)/60)%60);
-    var sec = Math.floor(((nextcheckpoint-now)/1000)%60);
+    var hours = Math.floor(((((checkpointms-now)/1000)/60)/60)%24);
+    var mins = Math.floor((((checkpointms-now)/1000)/60)%60);
+    var sec = Math.floor(((checkpointms-now)/1000)%60);
     return 'Next Checkpoint in: ' + hours + 'h ' + mins + 'm ' + sec + 's';
   };
 
@@ -78,7 +77,7 @@ var setup = function() {
         currentcheckpoint = nextcheckpoint;
         runHooks('pluginRegionScores', {event:'checkpoint'});
       }
-      elem.innerHTML = formattedTimeToCheckpoint();
+      elem.innerHTML = formattedTimeToCheckpoint(nextCheckpoint());
     });
   }, 1000);
   pluginCreateHook('pluginRegionScores');
@@ -123,7 +122,6 @@ var setup = function() {
   
   // function to compute a simple linear regression for both teams
   function simpleLinearRegression(items) {
-    console.log(items);
     var len = items.length-1;
     var sumx = 0;
     var sumxsq = 0;
@@ -139,7 +137,6 @@ var setup = function() {
       sumx += i;
       sumxsq += i*i;
     }
-    console.log(sumx, sumxsq, sumyres, sumprodres);
 
     // a = (sum_of_products - (sum_x * sum_y) / length) / (sum_x_squared - ((sum_x ** 2) / length))
     // b = (sum_y - a * sum_x) / length
@@ -401,7 +398,6 @@ var setup = function() {
             result += '<span>' + search + (i>=10?i:('0' + i)) + '</span><br>';
           }
         } else if (searches !== null) {
-          console.log(searches);
           var num = searches[2]?parseInt(searches[2]):'';
           var word = searches[1]?searches[1]:'';
           for (var i = 0; i < codewords.length; i++) {
@@ -511,7 +507,7 @@ var setup = function() {
            +'<table>'+teamRow[first]+teamRow[1-first]+'</table>'
            +leadinfo // stick our info under the score bars
            +regionScoreboardScoreHistoryChart(data.result, logscale)
-           +'<div class="time-to-checkpoint">'+ formattedTimeToCheckpoint() +'</div></div>'
+           +'<div class="time-to-checkpoint">'+ formattedTimeToCheckpoint(nextCheckpoint()) +'</div></div>'
            +'<b>Checkpoint overview</b>'
            +'<div>'+regionScoreboardScoreHistoryTable(data.result)+'</div>'
            +'<b>Top agents</b>'

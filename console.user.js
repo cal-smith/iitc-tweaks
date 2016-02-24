@@ -78,16 +78,70 @@ var setup = function() {
         exception: function() { this.error.apply(this, arguments); }
     };
 
+    var utils = {
+        echo: function() {
+            if (arguments[1].search(/\w+\(*\)/i) != -1) {
+                return eval(arguments[1]);
+            }
+            return arguments[1];
+        },
+        split: function() {// splits a string(arg2) with a diliminator(arg1)
+            // try json parsing the split string to see if its in quoted ("likeso" aka "\"likeso\"") format
+            try { arguments[1] = JSON.parse(arguments[1]) } catch(e) {};
+            return arguments[2].split(arguments[1]);
+        },
+        join: function() {// joins an array(arg2) with a diliminator(arg1)
+            try { arguments[2] = JSON.parse(arguments[2]) } catch(e) {};
+            try { arguments[1] = JSON.parse(arguments[1]) } catch(e) {};
+            return arguments[2].join(arguments[1]);
+
+        },
+        scores: function() {
+            if (arguments[1]) {
+                regionScoresAtRegion(arguments[1]);
+            } else {
+                regionScoreboard();
+            }
+        },
+        checkpoint: function() {
+            if (arguments[1]) {
+                var checkpoints = 'the next ' + arguments[1] + ' checkpoints are: \n';
+                for (var i = 0; i < arguments[1]; i++) {
+                    checkpoints += unixTimeToString(nextCheckpoint() + (i*18000000), true) + '\n';
+                }
+                return checkpoints;
+            }
+            return formattedTimeToCheckpoint(nextCheckpoint());
+        },
+        cp: function() { return this.checkpoint.apply(this, Array.prototype.slice.call(arguments)); }
+    };
+
+    var parse_command = function(command) {
+        var parts = command.split("|");
+        parts = parts.map(function(x){return x.trim().split(" ");});
+        if (!(parts[0][0] in utils)) return false;
+        var ret = "";
+        for (var i = 0; i < parts.length; i++) {
+            if (parts[i][0] in utils) {
+                parts[i].push(ret);
+                ret = utils[parts[i][0]].apply(utils, parts[i]);
+            }
+        }
+        console.log(ret);
+        return true;
+    };
+
     window.plugin.console.eval = function(ev) {
-        //console.log(ev);
         if(ev.code === 'Enter') {
-            console.log(' -> ' + ev.target.value);
-            var res = '';
-            try { res = eval(ev.target.value) } catch(e) { res = e; }
-            console.log(' <- ' + res);
-            plugin.console.commands.push(ev.target.value);
-            ev.target.value = ""
+            var input = ev.target.value;
+            ev.target.value = "";
+            console.log(' -> ' + input);
+            plugin.console.commands.push(input);
             plugin.console.commandsidx = 0;
+            if(parse_command(input)) return;
+            var res = '';
+            try { res = eval(input) } catch(e) { res = e; }
+            console.log(' <- ' + res);
         } else if(ev.code === 'ArrowUp') {
             var commands = plugin.console.commands;
             if(commands.length > 0) {
@@ -96,12 +150,13 @@ var setup = function() {
             }
         } else if(ev.code === 'ArrowDown') {
             var commands = plugin.console.commands;
-            if (plugin.console.commandsidx == 1) {
-                ev.target.value = '';
-                plugin.console.commandsidx = 0;
-            } else if (commands.length > 0) {
-                if (plugin.console.commandsidx > 1) plugin.console.commandsidx--;
-                ev.target.value = commands[commands.length-plugin.console.commandsidx];
+            if (commands.length > 0) {
+                if (plugin.console.commandsidx >= 1) plugin.console.commandsidx--;
+                if (plugin.console.commandsidx !== 0) {
+                    ev.target.value = commands[commands.length-plugin.console.commandsidx];
+                } else {
+                    ev.target.value = '';
+                }
             }
         }
     };

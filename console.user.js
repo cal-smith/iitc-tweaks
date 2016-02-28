@@ -85,14 +85,12 @@ var setup = function() {
             }
             return arguments[1];
         },
-        split: function() {// splits a string(arg2) with a diliminator(arg1)
-            // try json parsing the split string to see if its in quoted ("likeso" aka "\"likeso\"") format
-            try { arguments[1] = JSON.parse(arguments[1]) } catch(e) {};
+        split: function() {// splits a string(arg2) with a delimiter(arg1)
             return arguments[2].split(arguments[1]);
         },
-        join: function() {// joins an array(arg2) with a diliminator(arg1)
+        join: function() {// joins an array(arg2) with a delimiter(arg1)
+            // try to parse the array
             try { arguments[2] = JSON.parse(arguments[2]) } catch(e) {};
-            try { arguments[1] = JSON.parse(arguments[1]) } catch(e) {};
             return arguments[2].join(arguments[1]);
 
         },
@@ -113,12 +111,27 @@ var setup = function() {
             }
             return formattedTimeToCheckpoint(nextCheckpoint());
         },
-        cp: function() { return this.checkpoint.apply(this, Array.prototype.slice.call(arguments)); }
+        cp: function() { return this.checkpoint.apply(this, Array.prototype.slice.call(arguments)); },
+        help: function() {
+            return this[arguments[1]].help();
+        }
     };
+    // command help definitions
+    utils.echo.help = function() { return " echo [a] - echos the argument [a]"; };
+    utils.split.help = function() { return "split [d, s] - splits string [s] by delimiter [d]"};
+    utils.join.help = function() { return "join [s, a] - joins array [a] with string [s]"};
+    utils.scores.help = function() { return "scores [r] - either displays scores for the current region, or for region [r]"; };
+    utils.checkpoint.help = function() { return "checkpoint [n] - calculates either the time to the next checkpoint \n or the times of the next [n] checkpoints. \n aliased as cp."; };
+    utils.cp.help = utils.checkpoint.help;
+    utils.help.help = function() { return "help! help!"; };
 
     var parse_command = function(command) {
         var parts = command.split("|");
-        parts = parts.map(function(x){return x.trim().split(" ");});
+        parts = parts.map(function(x){
+            return x.trim().match(/(\w+|\".*?\")/gi)
+                .map(function(x){return x.replace(/\"/gi, "");});
+        });
+        //console.log(parts);
         if (!(parts[0][0] in utils)) return false;
         var ret = "";
         for (var i = 0; i < parts.length; i++) {
@@ -127,6 +140,7 @@ var setup = function() {
                 ret = utils[parts[i][0]].apply(utils, parts[i]);
             }
         }
+        // output
         console.log(ret);
         return true;
     };
@@ -164,15 +178,22 @@ var setup = function() {
     window.plugin.console.open = function() {
         var window = dialog({
             title:'console',
-            html:
-            '<pre id="out" style="height:500px;width:100%;overflow:auto;"></pre>'
-            +'<input type="text" placeholder="command" onkeyup="window.plugin.console.eval(event)" style="width:100%;"/>',
+            html:'<div id="console-tabs">'
+                 +'<ul><li><a href="#console-tab">console</a></li><li><a href="#editor-tab">editor</a></li></ul>' 
+                 +'<div id="console-tab"><pre id="out" style="height:340px;width:100%;overflow:auto;"></pre>'
+                 +'<input type="text" placeholder="command" onkeyup="window.plugin.console.eval(event)" style="width:100%;"/></div>'
+                 +'<div id="editor-tab"><textarea id="code-editor" style="width:100%;height:350px;margin-top:10px;margin-bottom10px;"></textarea><button id="load-code">exec</button></div>'
+                 +'</div>',
             width:700,
             minHeight:500
         });
         document.querySelector('#out').textContent = plugin.console.history.reduce(function(x, y) { return x += y; });
+        $('#console-tabs').tabs();
         var out = document.querySelector('#out');
         out.scrollTop = out.scrollHeight - out.offsetHeight;
+        document.querySelector('#load-code').addEventListener('click', function(ev) {
+            eval(document.querySelector('#code-editor').value);
+        });
     };
 };
 // PLUGIN END //////////////////////////////////////////////////////////

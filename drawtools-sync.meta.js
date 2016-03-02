@@ -2,7 +2,7 @@
 // @id             iitc-plugin-drawtools-sync@hansolo669
 // @name           IITC plugin: drawtools sync
 // @category       Tweaks
-// @version        0.0.1
+// @version        0.1.0
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://www.reallyawesomedomain.com/iitc-tweaks/drawtools-sync.meta.js
 // @downloadURL    https://www.reallyawesomedomain.com/iitc-tweaks/drawtools-sync.user.js

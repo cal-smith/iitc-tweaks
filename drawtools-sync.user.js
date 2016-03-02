@@ -2,7 +2,7 @@
 // @id             iitc-plugin-drawtools-sync@hansolo669
 // @name           IITC plugin: drawtools sync
 // @category       Tweaks
-// @version        0.0.1
+// @version        0.1.0
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://www.reallyawesomedomain.com/iitc-tweaks/drawtools-sync.meta.js
 // @downloadURL    https://www.reallyawesomedomain.com/iitc-tweaks/drawtools-sync.user.js
@@ -32,9 +32,43 @@ window.plugin.drawtools_sync.sync = window.plugin.sync;
 window.plugin.drawtools_sync.drawTools = window.plugin.drawTools;
 window.plugin.drawtools_sync.syncloaded = false;
 
-window.plugin.drawtools_sync.registerFieldForSyncing = function() {
-	window.plugin.sync.registerMapForSync('drawtools_sync', 'layers', window.plugin.drawtools_sync.syncCallback, window.plugin.drawtools_sync.syncInitialed);
+window.plugin.drawtools_sync.register_with_sync = function() {
+	window.plugin.sync.registerMapForSync('drawtools_sync', 'layers', window.plugin.drawtools_sync.updated, window.plugin.drawtools_sync.initialized);
 };
+
+// copied from drawtools, lets us load sync'd data *and* import drawn items without triggering needless syncs...because it doesnt run hooks
+window.plugin.drawtools_sync.import_without_hooks = function(data) {
+  $.each(data, function(index,item) {
+    var layer = null;
+    var extraOpt = {};
+    if (item.color) extraOpt.color = item.color;
+
+    switch(item.type) {
+      case 'polyline':
+        layer = L.geodesicPolyline(item.latLngs, L.extend({},window.plugin.drawTools.lineOptions,extraOpt));
+        break;
+      case 'polygon':
+        layer = L.geodesicPolygon(item.latLngs, L.extend({},window.plugin.drawTools.polygonOptions,extraOpt));
+        break;
+      case 'circle':
+        layer = L.geodesicCircle(item.latLng, item.radius, L.extend({},window.plugin.drawTools.polygonOptions,extraOpt));
+        break;
+      case 'marker':
+        var extraMarkerOpt = {};
+        if (item.color) extraMarkerOpt.icon = window.plugin.drawTools.getMarkerIcon(item.color);
+        layer = L.marker(item.latLng, L.extend({},window.plugin.drawTools.markerOptions,extraMarkerOpt));
+        window.registerMarkerForOMS(layer);
+        break;
+      default:
+        console.warn('unknown layer type "'+item.type+'" when loading draw tools layer');
+        break;
+    }
+
+    if (layer) {
+      window.plugin.drawTools.drawnItems.addLayer(layer);
+    }
+  });
+}
 
 window.plugin.drawtools_sync.render = function() {
 	console.log('rendering');
@@ -42,26 +76,27 @@ window.plugin.drawtools_sync.render = function() {
 	if (!data) return;
 	// re-render drawn items
 	window.plugin.drawTools.drawnItems.clearLayers();
-	window.plugin.drawTools.import(JSON.parse(data));
+	window.plugin.drawtools_sync.import_without_hooks(JSON.parse(data));
 	window.plugin.drawTools.save();
 };
 
-window.plugin.drawtools_sync.syncCallback = function(plugin, field, ev, fullupdate) {
+window.plugin.drawtools_sync.updated = function(plugin, field, ev, fullupdate) {
 	if(!window.plugin.drawtools_sync.syncloaded) return;
 	console.log('updated', plugin, field, ev, fullupdate, window.plugin.drawtools_sync.layers);
 	if (field === 'layers') {
 		// render if its a full update, or if its a remote update
-		if (fullupdate) window.plugin.drawtools_sync.render();
 		if (!ev) return;
-		if (!ev.islocal) window.plugin.drawtools_sync.render();
+		window.plugin.drawtools_sync.render();
 	}
 };
 
-window.plugin.drawtools_sync.syncInitialed = function(plugin, field) {
+window.plugin.drawtools_sync.initialized = function(plugin, field) {
 	console.log('init', plugin, field, window.plugin.drawtools_sync.layers);
 	if (field === 'layers') {
 		window.plugin.drawtools_sync.syncloaded = true;
 		addHook('pluginDrawTools', window.plugin.drawtools_sync.delayed_sync);
+		// re-render the drawn items after load to ensure consistency and pick up any changes
+		window.plugin.drawtools_sync.render();
 	}
 };
 
@@ -75,8 +110,8 @@ window.plugin.drawtools_sync.sync_now = function() {
 
 window.plugin.drawtools_sync.delayed_sync = function(ev) {
 	if(!window.plugin.drawtools_sync.syncloaded) return;
-	if (ev.event === 'import') return;
 	console.log('drawtools delayed syncing', ev);
+	if(ev.event === 'clear') localStorage['plugin-draw-tools-layer'] = '[]';
 	clearTimeout(window.plugin.drawtools_sync.sync_timeout);
 	window.plugin.drawtools_sync.sync_timeout = setTimeout(function() {
 		console.log("sync");
@@ -87,8 +122,7 @@ window.plugin.drawtools_sync.delayed_sync = function(ev) {
 };
 
 var setup = function() {
-	console.log("drawsync");
-	window.addHook('iitcLoaded', window.plugin.drawtools_sync.registerFieldForSyncing);
+	window.addHook('iitcLoaded', window.plugin.drawtools_sync.register_with_sync);
 };
 // PLUGIN END //////////////////////////////////////////////////////////
 setup.info = plugin_info; //add the script info data to the function as a property

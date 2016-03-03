@@ -68,6 +68,8 @@ window.plugin.drawtools_sync.import_without_hooks = function(data) {
       window.plugin.drawTools.drawnItems.addLayer(layer);
     }
   });
+  // check all links in crosslinks manually
+  if (window.plugin.crossLinks) window.plugin.crossLinks.checkAllLinks();
 }
 
 window.plugin.drawtools_sync.render = function() {
@@ -122,6 +124,12 @@ window.plugin.drawtools_sync.delayed_sync = function(ev) {
 };
 
 var setup = function() {
+	if (!window.plugin.drawTools || !window.plugin.sync) {
+		alert('drawtools sync requires drawtools and the sync plugin');
+		return;
+	}
+	// create the drawtools hook just incase we load before drawtools
+	window.pluginCreateHook('pluginDrawTools');
 	window.addHook('iitcLoaded', window.plugin.drawtools_sync.register_with_sync);
 };
 // PLUGIN END //////////////////////////////////////////////////////////

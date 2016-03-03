@@ -68,8 +68,9 @@ window.plugin.drawtools_sync.import_without_hooks = function(data) {
       window.plugin.drawTools.drawnItems.addLayer(layer);
     }
   });
-  // check all links in crosslinks manually
+  // check all links in crosslinks and donelinks manually
   if (window.plugin.crossLinks) window.plugin.crossLinks.checkAllLinks();
+  if (window.plugin.doneLinks) window.plugin.doneLinks.checkAllLinks();
 }
 
 window.plugin.drawtools_sync.render = function() {

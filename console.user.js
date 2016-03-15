@@ -27,6 +27,9 @@ window.plugin.console = {};
 window.plugin.console.history = [];
 window.plugin.console.commands = [];
 window.plugin.console.commandsidx = 0;
+window.tools.to_array = function(array) {
+  return Array.prototype.slice.apply(array);
+}
 
 var setup = function() {
     //add options menu
@@ -176,6 +179,7 @@ var setup = function() {
     };
 
     window.plugin.console.open = function() {
+        // to_array(tools.elems("script")).filter(function(script) { if(!script.attributes.src) return true; });
         var window = dialog({
             title:'console',
             html:'<div id="console-tabs">'

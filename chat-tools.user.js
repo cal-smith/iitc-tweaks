@@ -137,7 +137,7 @@ window.plugin.chat_tools.open = function() {
   var html = '<div><div id="chat-tools-tabs">\
   <ul><li><a href="#filter-tab">filters</a></li><li><a href="#highlight-tab">highlighters</a></li></ul>\
   <div id="filter-tab">\
-    <div id="filter-list"></div>\
+    <div id="filter-list" style="overflow: auto;height: ' + (window.useAndroidPanes()?window.innerHeight-22:'274') + 'px;"></div>\
     <form id="filterform" style="bottom: 0;position: absolute;">\
       <input type="text" placeholder="regex or search string">\
       <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
@@ -148,7 +148,7 @@ window.plugin.chat_tools.open = function() {
       <button type="submit">add filter</button>\
     </form></div>\
   <div id="highlight-tab">\
-    <div id="highlighter-list"></div>\
+    <div id="highlighter-list" style="overflow: auto;height: ' + (window.useAndroidPanes()?window.innerHeight-22:'274') + 'px;"></div>\
     <form id="highlighterform" style="bottom: 0;position: absolute;">\
       <input type="text" placeholder="regex or search string">\
       <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
@@ -276,7 +276,7 @@ window.plugin.chat_tools.render_filterlist = function() {
               + '<label> include <input type="radio" name="filtertypefor' + i + '" ' + (v.type === 'include'?'checked':'') + '></label>'
               + '<label> exclude <input type="radio" name="filtertypefor' + i + '" ' + (v.type === 'exclude'?'checked':'') + '></label></form></li>';
   });
-  tools.elem('#filter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;overflow: auto;height: 263px;">' + list + '</ul>';
+  tools.elem('#filter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;">' + list + '</ul>';
 }
 
 window.plugin.chat_tools.render_highlighterlist = function() {
@@ -293,7 +293,7 @@ window.plugin.chat_tools.render_highlighterlist = function() {
               + '<label> alerts <input type="checkbox"' + (v.tab.alerts?'checked':'') + '></label> ] <br>'
               + '<label> color <input type="color" value="' + v.color + '"></label></form></li>';
   });
-  tools.elem('#highlighter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;overflow: auto;height: 263px;">' + list + '</ul>';  
+  tools.elem('#highlighter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;">' + list + '</ul>';  
 }
 
 window.plugin.chat_tools.pane_change = function(pane) {

@@ -92,6 +92,12 @@ if (!window.tools) {
     return this;
   };
 
+  tools.PersistantArray.prototype.set = function(index, value) {
+    this[index] = value;
+    window.localStorage.setItem(this._id, JSON.stringify(this));
+    return this;
+  }
+
   tools.PersistantArray.prototype.pop = function() {
     var v = Array.prototype.pop.call(this);
     window.localStorage.setItem(this._id, JSON.stringify(this));
@@ -117,42 +123,50 @@ window.plugin.chat_tools.filters = new tools.PersistantArray('chat-tools-filters
 window.plugin.chat_tools.highlighters = new tools.PersistantArray('chat-tools-highlighters');
 window.plugin.chat_tools.highlight_color = "#505050";
 window.plugin.chat_tools.hide_all = false;
-// filter {matcher: 'string', tab: {'all':true, 'faction':true, 'alerts':true}, type: 'includes|excludes'}
+// filter {matcher: 'string', tab: {'all':true, 'faction':true, 'alerts':true}, type: 'include|exclude'}
 // highlighter {matcher: 'string', tab: {'all':true, 'faction':true, 'alerts':true}, color: '#505050'}
 window.plugin.chat_tools.open = function() {
-  var dlg = dialog({
-    title: 'chat tools',
-    dialogClass: 'chat-tools',
-    html: '<div><div id="chat-tools-tabs">\
-      <ul><li><a href="#filter-tab">filters</a></li><li><a href="#highlight-tab">highlighters</a></li></ul>\
-      <div id="filter-tab">\
-        <div id="filter-list"></div>\
-        <form id="filterform" style="bottom: 0;position: absolute;">\
-          <input type="text" placeholder="regex or search string">\
-          <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
-          <label>faction <input type="checkbox" checked> |&nbsp;</label>\
-          <label>alerts <input type="checkbox" checked> ]&nbsp;</label>\
-          <label title="show items matching this filter">include<input name="filtertype" type="radio"></label>\
-          <label title="hide items matching this filter">exclude<input name="filtertype" type="radio" checked></label>\
-          <button type="submit">add filter</button>\
-        </form></div>\
-      <div id="highlight-tab">\
-        <div id="highlighter-list"></div>\
-        <form id="highlighterform" style="bottom: 0;position: absolute;">\
-          <input type="text" placeholder="regex or search string">\
-          <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
-          <label>faction <input type="checkbox" checked> |&nbsp;</label>\
-          <label>alerts <input type="checkbox" checked> ]&nbsp;</label>\
-          <label>color <input type="color" value="#505050"></input></label>\
-          <button type="submit">add highlighter</button>\
-        </form></div>\
-      </div></div>',
-    width:550,
-    height: 400
-  });
-  $('.chat-tools .ui-dialog-buttonset').prepend('<label style="float: left;">exclude all messages\
-                                                  <input type="checkbox" onclick="window.plugin.chat_tools.toggle_all()">\
-                                                </label>');
+  var html = '<div><div id="chat-tools-tabs">\
+  <ul><li><a href="#filter-tab">filters</a></li><li><a href="#highlight-tab">highlighters</a></li></ul>\
+  <div id="filter-tab">\
+    <div id="filter-list"></div>\
+    <form id="filterform" style="bottom: 0;position: absolute;">\
+      <input type="text" placeholder="regex or search string">\
+      <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
+      <label>faction <input type="checkbox" checked> |&nbsp;</label>\
+      <label>alerts <input type="checkbox" checked> ]&nbsp;</label>\
+      <label title="show items matching this filter">include<input name="filtertype" type="radio"></label>\
+      <label title="hide items matching this filter">exclude<input name="filtertype" type="radio" checked></label>\
+      <button type="submit">add filter</button>\
+    </form></div>\
+  <div id="highlight-tab">\
+    <div id="highlighter-list"></div>\
+    <form id="highlighterform" style="bottom: 0;position: absolute;">\
+      <input type="text" placeholder="regex or search string">\
+      <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
+      <label>faction <input type="checkbox" checked> |&nbsp;</label>\
+      <label>alerts <input type="checkbox" checked> ]&nbsp;</label>\
+      <label>color <input type="color" value="#505050"></input></label>\
+      <button type="submit">add highlighter</button>\
+    </form></div>\
+  </div></div>';
+  if (window.useAndroidPanes()) {
+    var mobilePane = document.createElement('div');
+    mobilePane.className = 'chat-tools-pane';
+    mobilePane.innerHTML = html;
+    android.addPane('chat-tools', 'Chat Tools');
+  } else {
+    var dlg = dialog({
+      title: 'chat tools',
+      dialogClass: 'chat-tools',
+      html: html,
+      width:550,
+      height: 400
+    });
+    $('.chat-tools .ui-dialog-buttonset').prepend('<label style="float: left;">exclude all messages\
+                                                    <input type="checkbox" onclick="window.plugin.chat_tools.toggle_all()">\
+                                                  </label>');
+  }
   $('#chat-tools-tabs').tabs();
   tools.on(tools.elem('#filterform'), 'submit', function(event) {
     event.preventDefault();
@@ -202,6 +216,36 @@ window.plugin.chat_tools.remove = function(type, index) {
   chat.renderData(chat['_' + tab].data, 'chat' + chat.getActive(), false);
 }
 
+window.plugin.chat_tools.update = function(ev, type, index) {
+  var form = ev.target.form;
+  ev.preventDefault();
+  if (type === 'filter') {
+    window.plugin.chat_tools.filters.set(index, 
+    {
+      matcher: form[0].value,
+      tab: {
+        all: form[1].checked,
+        faction: form[2].checked,
+        alerts: form[3].checked
+      },
+      type: form[4].checked?'include':'exclude'
+    });
+  } else { 
+    window.plugin.chat_tools.highlighters.set(index, 
+    {
+      matcher: form[0].value,
+      tab: {
+        all: form[1].checked,
+        faction: form[2].checked,
+        alerts: form[3].checked
+      },
+      color: form[4].value
+    });
+  }
+  var tab = chat.getActive() === 'all'?'public':chat.getActive();
+  chat.renderData(chat['_' + tab].data, 'chat' + chat.getActive(), false);
+}
+
 window.plugin.chat_tools.toggle_all = function() {
   window.plugin.chat_tools.hide_all = !window.plugin.chat_tools.hide_all;
   var tab = chat.getActive() === 'all'?'public':chat.getActive();
@@ -212,8 +256,15 @@ window.plugin.chat_tools.render_filterlist = function() {
   var filters = window.plugin.chat_tools.filters;
   var list = '';
   filters.each(function(i, v) {
-    list += '<li style="border-bottom: 1px solid lightslategrey;margin-bottom: 5px;padding-bottom: 5px;">\
-              <a onclick="window.plugin.chat_tools.remove(\'filter\', \'' + i + '\')">[x]</a>' + JSON.stringify(v) + '</li>';
+    list += '<li style="border-bottom: 1px solid lightslategrey;margin-bottom: 5px;padding-bottom: 5px;"\
+              onchange="window.plugin.chat_tools.update(event, \'filter\', \'' + i + '\')">\
+              <a onclick="window.plugin.chat_tools.remove(\'filter\', \'' + i + '\')">[delete]</a>' 
+              + '<form><label> matches <input type="text" value="' + v.matcher + '"></label><br>'
+              + ' enabled for [ <label> all <input type="checkbox"' + (v.tab.all?'checked':'') + '></label> | '
+              + '<label> faction <input type="checkbox"' + (v.tab.faction?'checked':'') + '></label> | ' 
+              + '<label> alerts <input type="checkbox"' + (v.tab.alerts?'checked':'') + '></label> ] <br>'
+              + '<label> include <input type="radio" name="filtertypefor' + i + '" ' + (v.type === 'include'?'checked':'') + '></label>'
+              + '<label> exclude <input type="radio" name="filtertypefor' + i + '" ' + (v.type === 'exclude'?'checked':'') + '></label></form></li>';
   });
   tools.elem('#filter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;overflow: auto;height: 263px;">' + list + '</ul>';
 }
@@ -224,13 +275,13 @@ window.plugin.chat_tools.render_highlighterlist = function() {
   highlighters.each(function(i, v) {// some way of getting the whole thing ... maybe wrapping in a form? yup - event.target.form[] 
     // ... now i just have to override the array setter in the PersistantArray :P
     list += '<li style="border-bottom: 1px solid lightslategrey;margin-bottom: 5px;padding-bottom: 5px;"\
-              onchange="window.plugin.chat_tools.update(\'highlighter\', \'' + i + '\')">\
-              <a onclick="window.plugin.chat_tools.remove(\'highlighter\', \'' + i + '\')">[x]</a>' 
-              + '<label> matches <input type="text" value="' + v.matcher + '"></label>'
+              onchange="window.plugin.chat_tools.update(event, \'highlighter\', \'' + i + '\')">\
+              <a onclick="window.plugin.chat_tools.remove(\'highlighter\', \'' + i + '\')">[delete]</a>' 
+              + '<form><label> matches <input type="text" value="' + v.matcher + '"></label><br>'
               + ' enabled for [ <label> all <input type="checkbox"' + (v.tab.all?'checked':'') + '></label> | '
               + '<label> faction <input type="checkbox"' + (v.tab.faction?'checked':'') + '></label> | ' 
-              + '<label> alerts <input type="checkbox"' + (v.tab.alerts?'checked':'') + '></label> ] '
-              + '<label> color <input type="color" value="' + v.color + '"></label></li>';
+              + '<label> alerts <input type="checkbox"' + (v.tab.alerts?'checked':'') + '></label> ] <br>'
+              + '<label> color <input type="color" value="' + v.color + '"></label></form></li>';
   });
   tools.elem('#highlighter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;overflow: auto;height: 263px;">' + list + '</ul>';  
 }
@@ -240,6 +291,8 @@ var setup = function() {
   tools.elem('#chatcontrols').innerHTML += '<a onclick="window.plugin.chat_tools.open()">tools</a>';
   // re-run setup to re-bind the tab change handlers
   chat.setup();
+  if (window.useAndroidPanes())
+    window.plugin.chat_tools.open();
 
   var match_filter = function(message) {
     if (plugin.chat_tools.filters.length > 0) {

@@ -286,13 +286,19 @@ window.plugin.chat_tools.render_highlighterlist = function() {
   tools.elem('#highlighter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;overflow: auto;height: 263px;">' + list + '</ul>';  
 }
 
+window.plugin.chat_tools.pane_change = function(pane) {
+  if (pane === 'chat-tools') {
+    window.plugin.chat_tools.open();
+  }
+}
+
 var setup = function() {
   // tools.append(tools.elem('#chatcontrols'), tools.template(['a', {text: 'tools', onclick='window.plugin.chat_tools.open()'}]));
   tools.elem('#chatcontrols').innerHTML += '<a onclick="window.plugin.chat_tools.open()">tools</a>';
   // re-run setup to re-bind the tab change handlers
   chat.setup();
   if (window.useAndroidPanes())
-    window.plugin.chat_tools.open();
+    addHook('paneChanged', window.plugin.chat_tools.pane_change);
 
   var match_filter = function(message) {
     if (plugin.chat_tools.filters.length > 0) {

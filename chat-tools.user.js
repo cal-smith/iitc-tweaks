@@ -151,7 +151,15 @@ window.plugin.chat_tools.open = function() {
     </form></div>\
   </div></div>';
   if (window.useAndroidPanes()) {
-    $('<div id="chat-tools-pane">' + html + '</div>').appendTo(document.body);
+    $('<div id="chat-tools-pane" style="\
+      background: transparent;\
+      border: 0 none !important;\
+      height: 100% !important;\
+      width: 100% !important;\
+      left: 0 !important;\
+      top: 0 !important;\
+      position: absolute;\
+      overflow: auto;">' + html + '</div>').appendTo(document.body);
   } else {
     var dlg = dialog({
       title: 'chat tools',

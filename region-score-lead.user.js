@@ -24,6 +24,10 @@ if(typeof window.plugin !== 'function') window.plugin = function() {};
 
 // PLUGIN START ////////////////////////////////////////////////////////
 var setup = function() {
+  window.localedigits = function(d) {
+    if(!parseInt(d)) return d;
+    return parseInt(d).toLocaleString();
+  }
   // include the S2 functions if they don't exist
   if (!window.S2) {
     (function() {
@@ -548,10 +552,10 @@ var setup = function() {
     var rows = '';
     for(var i=history.length-1; i >= 0; i--) {
       lead += history[i][1] - history[i][2];
-      var checkpoint_lead = lead < 0?'res: ' + digits(Math.abs(lead)):'enl: ' + digits(lead);
+      var checkpoint_lead = lead < 0?'res: ' + localedigits(Math.abs(lead)):'enl: ' + localedigits(lead);
       rows = '<tr><td>' + history[i][0] 
-          + '</td><td>' + digits(history[i][1]) 
-          + '</td><td>' + digits(history[i][2]) 
+          + '</td><td>' + localedigits(history[i][1]) 
+          + '</td><td>' + localedigits(history[i][2]) 
           + '</td><td class="' + (lead < 0?'res':'enl') + '" style="text-align: left;" >' + checkpoint_lead 
           + '</td></tr>' + rows;
     }
@@ -747,7 +751,7 @@ var setup = function() {
       var barSize = Math.round(data.result.gameScore[t]/maxAverage*200);
       teamRow[t] = '<tr><th class="'+teamClass+'">'
         +team+'</th><td class="'+teamClass+'">'
-        +digits(data.result.gameScore[t])+'</td><td><div style="background:'
+        +localedigits(data.result.gameScore[t])+'</td><td><div style="background:'
         +teamCol+'; width: '+barSize+'px; height: 1.3ex; border: 2px outset '
         +teamCol+'"> </td></tr>';
   
@@ -759,9 +763,9 @@ var setup = function() {
     var leadinfo = '<div style="padding-left: 5px;">';
     // res lead when we sum to a negative value
     if (lead < 0) {
-      leadinfo += '<span class="res">res lead: ' + digits(Math.abs(lead)) + 'mu</span></div>';
+      leadinfo += '<span class="res">res lead: ' + localedigits(Math.abs(lead)) + 'mu</span></div>';
     } else {
-      leadinfo += '<span class="enl">enl lead: ' + digits(lead) + 'mu</span></div>';
+      leadinfo += '<span class="enl">enl lead: ' + localedigits(lead) + 'mu</span></div>';
     }
   
     var first = PLAYER.team == 'RESISTANCE' ? 1 : 0;
@@ -785,9 +789,9 @@ var setup = function() {
       elem = $(elem);
   
       var tooltip = 'CP:\t'+elem.attr('data-cp')
-        + '\nEnl:\t' + digits(elem.attr('data-enl'))
-        + '\nRes:\t' + digits(elem.attr('data-res'))
-        + '\nDiff:\t' + digits(Math.abs(elem.attr('data-res')-elem.attr('data-enl')));
+        + '\nEnl:\t' + localedigits(elem.attr('data-enl'))
+        + '\nRes:\t' + localedigits(elem.attr('data-res'))
+        + '\nDiff:\t' + localedigits(Math.abs(elem.attr('data-res')-elem.attr('data-enl')));
       elem.tooltip({
         content: convertTextToTableMagic(tooltip),
         position: {my: "center bottom", at: "center top-10"}

@@ -125,6 +125,14 @@ window.plugin.chat_tools.highlight_color = "#505050";
 window.plugin.chat_tools.hide_all = false;
 // filter {matcher: 'string', tab: {'all':true, 'faction':true, 'alerts':true}, type: 'include|exclude'}
 // highlighter {matcher: 'string', tab: {'all':true, 'faction':true, 'alerts':true}, color: '#505050'}
+window.plugin.chat_tools.render_tab = function() {
+  //we'll add a hook to refresh the data when we switch to a chate pane
+  if (!window.useAndroidPanes()) {
+    var tab = chat.getActive() === 'all'?'public':chat.getActive();
+    chat.renderData(chat['_' + tab].data, 'chat' + chat.getActive(), false);
+  }
+}
+
 window.plugin.chat_tools.open = function() {
   var html = '<div><div id="chat-tools-tabs">\
   <ul><li><a href="#filter-tab">filters</a></li><li><a href="#highlight-tab">highlighters</a></li></ul>\
@@ -187,8 +195,7 @@ window.plugin.chat_tools.open = function() {
       type: event.target[4].checked?'include':'exclude'
     });
     event.target[0].value = '';
-    var tab = chat.getActive() === 'all'?'public':chat.getActive();
-    chat.renderData(chat['_' + tab].data, 'chat' + chat.getActive(), false);
+    window.plugin.chat_tools.render_tab();
     window.plugin.chat_tools.render_filterlist();
   });
   tools.on(tools.elem('#highlighterform'), 'submit', function(event) {
@@ -203,8 +210,7 @@ window.plugin.chat_tools.open = function() {
       color: event.target[4].value
     });
     event.target[0].value = '';
-    var tab = chat.getActive() === 'all'?'public':chat.getActive();
-    chat.renderData(chat['_' + tab].data, 'chat' + chat.getActive(), false);
+    window.plugin.chat_tools.render_tab();
     window.plugin.chat_tools.render_highlighterlist();
   });
   window.plugin.chat_tools.render_filterlist();
@@ -219,8 +225,7 @@ window.plugin.chat_tools.remove = function(type, index) {
     window.plugin.chat_tools.highlighters.remove(index);
     window.plugin.chat_tools.render_highlighterlist();
   }
-  var tab = chat.getActive() === 'all'?'public':chat.getActive();
-  chat.renderData(chat['_' + tab].data, 'chat' + chat.getActive(), false);
+  window.plugin.chat_tools.render_tab();
 }
 
 window.plugin.chat_tools.update = function(ev, type, index) {
@@ -249,14 +254,12 @@ window.plugin.chat_tools.update = function(ev, type, index) {
       color: form[4].value
     });
   }
-  var tab = chat.getActive() === 'all'?'public':chat.getActive();
-  chat.renderData(chat['_' + tab].data, 'chat' + chat.getActive(), false);
+  window.plugin.chat_tools.render_tab();
 }
 
 window.plugin.chat_tools.toggle_all = function() {
   window.plugin.chat_tools.hide_all = !window.plugin.chat_tools.hide_all;
-  var tab = chat.getActive() === 'all'?'public':chat.getActive();
-  chat.renderData(chat['_' + tab].data, 'chat' + chat.getActive(), false);
+  window.plugin.chat_tools.render_tab();
 }
 
 window.plugin.chat_tools.render_filterlist = function() {
@@ -298,6 +301,10 @@ window.plugin.chat_tools.pane_change = function(pane) {
     window.plugin.chat_tools.open();
   } else {
     $('#chat-tools-pane').remove();
+  }
+  if (pane === 'alerts' || pane === 'faction' || pane === 'all') {
+    var tab = pane === 'all'?'public':pane;
+    chat.renderData(chat['_' + tab].data, 'chat' + pane, false);
   }
 }
 

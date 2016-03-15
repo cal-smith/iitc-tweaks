@@ -159,7 +159,9 @@ window.plugin.chat_tools.open = function() {
       left: 0 !important;\
       top: 0 !important;\
       position: absolute;\
-      overflow: auto;">' + html + '</div>').appendTo(document.body);
+      overflow: auto;">' + html + '<label style="float: left;">exclude all messages\
+       <input type="checkbox" onclick="window.plugin.chat_tools.toggle_all()">\
+      </label></div>').appendTo(document.body);
   } else {
     var dlg = dialog({
       title: 'chat tools',

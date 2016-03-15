@@ -151,9 +151,7 @@ window.plugin.chat_tools.open = function() {
     </form></div>\
   </div></div>';
   if (window.useAndroidPanes()) {
-    var mobilePane = document.createElement('div');
-    mobilePane.className = 'chat-tools-pane';
-    mobilePane.innerHTML = html;
+    $('<div id="chat-tools-pane">' + html + '</div>').appendTo(document.body);
   } else {
     var dlg = dialog({
       title: 'chat tools',
@@ -288,6 +286,8 @@ window.plugin.chat_tools.render_highlighterlist = function() {
 window.plugin.chat_tools.pane_change = function(pane) {
   if (pane === 'chat-tools-pane') {
     window.plugin.chat_tools.open();
+  } else {
+    $('#chat-tools-pane').remove();
   }
 }
 

@@ -137,7 +137,7 @@ window.plugin.chat_tools.open = function() {
   var html = '<div><div id="chat-tools-tabs">\
   <ul><li><a href="#filter-tab">filters</a></li><li><a href="#highlight-tab">highlighters</a></li></ul>\
   <div id="filter-tab">\
-    <div id="filter-list" style="overflow: auto;height: ' + (window.useAndroidPanes()?window.innerHeight-22:'274') + 'px;"></div>\
+    <div id="filter-list" style="overflow: auto;height: ' + (window.useAndroidPanes()?window.innerHeight-100:'274') + 'px;"></div>\
     <form id="filterform" style="bottom: 0;position: absolute;">\
       <input type="text" placeholder="regex or search string">\
       <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
@@ -148,7 +148,7 @@ window.plugin.chat_tools.open = function() {
       <button type="submit">add filter</button>\
     </form></div>\
   <div id="highlight-tab">\
-    <div id="highlighter-list" style="overflow: auto;height: ' + (window.useAndroidPanes()?window.innerHeight-22:'274') + 'px;"></div>\
+    <div id="highlighter-list" style="overflow: auto;height: ' + (window.useAndroidPanes()?window.innerHeight-100:'274') + 'px;"></div>\
     <form id="highlighterform" style="bottom: 0;position: absolute;">\
       <input type="text" placeholder="regex or search string">\
       <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\

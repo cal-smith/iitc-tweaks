@@ -154,7 +154,6 @@ window.plugin.chat_tools.open = function() {
     var mobilePane = document.createElement('div');
     mobilePane.className = 'chat-tools-pane';
     mobilePane.innerHTML = html;
-    android.addPane('chat-tools', 'Chat Tools');
   } else {
     var dlg = dialog({
       title: 'chat tools',
@@ -287,7 +286,7 @@ window.plugin.chat_tools.render_highlighterlist = function() {
 }
 
 window.plugin.chat_tools.pane_change = function(pane) {
-  if (pane === 'chat-tools') {
+  if (pane === 'chat-tools-pane') {
     window.plugin.chat_tools.open();
   }
 }
@@ -297,8 +296,10 @@ var setup = function() {
   tools.elem('#chatcontrols').innerHTML += '<a onclick="window.plugin.chat_tools.open()">tools</a>';
   // re-run setup to re-bind the tab change handlers
   chat.setup();
-  if (window.useAndroidPanes())
+  if (window.useAndroidPanes()) {
+    android.addPane('chat-tools-pane', 'Chat Tools');
     addHook('paneChanged', window.plugin.chat_tools.pane_change);
+  }
 
   var match_filter = function(message) {
     if (plugin.chat_tools.filters.length > 0) {

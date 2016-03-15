@@ -13,6 +13,11 @@
 [click here to install](https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js)  
 [click here for the current development version](https://rawgit.com/hansolo669/iitc-tweaks/master/region-score-lead.user.js)
 
+#####Chat tools:
+- regex based filters and highlighters
+
+[click here for the current development version](https://rawgit.com/hansolo669/iitc-tweaks/master/chat-tools.user.js)
+
 #####console:
 - pipes the standard console back into an iitc window
 - input box for commands; complete with history (arrow up/arrow down)

@@ -6,7 +6,7 @@
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://www.reallyawesomedomain.com/iitc-tweaks/chat-tools.meta.js
 // @downloadURL    https://www.reallyawesomedomain.com/iitc-tweaks/chat-tools.user.js
-// @description    Provides details for portals not in view, features configurable auto refresh.
+// @description    Tools for chat including regex based filters and highligters
 // @include        https://www.ingress.com/intel*
 // @include        http://www.ingress.com/intel*
 // @match          https://www.ingress.com/intel*

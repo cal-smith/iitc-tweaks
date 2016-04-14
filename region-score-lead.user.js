@@ -2,7 +2,7 @@
 // @id             iitc-plugin-region-score-lead@hansolo669
 // @name           IITC plugin: region score lead
 // @category       Tweaks
-// @version        0.1.1
+// @version        0.2.0
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.meta.js
 // @downloadURL    https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js
@@ -725,6 +725,37 @@ var setup = function() {
     map.on('click', handleRegionClick, target);
   };
   // end of crazy region code
+
+  function generateTeamScoreBars(data) {
+    var maxAverage = Math.max(data.result.gameScore[0], data.result.gameScore[1], 1);
+    var teamRow = [];
+    for (var t=0; t<2; t++) {
+      var team = t===0 ? 'Enlightened' : 'Resistance';
+      var teamClass = t===0 ? 'enl' : 'res';
+      var teamCol = t===0 ? COLORS[TEAM_ENL] : COLORS[TEAM_RES];
+      var barSize = Math.round(data.result.gameScore[t]/maxAverage*200);
+      teamRow[t] = '<tr><th class="'+teamClass+'">'
+        +team+'</th><td class="'+teamClass+'">'
+        +localedigits(data.result.gameScore[t])+'</td><td><div style="background:'
+        +teamCol+'; width: '+barSize+'px; height: 1.3ex; border: 2px outset '
+        +teamCol+'"> </td></tr>';
+  
+    }
+    return teamRow;
+  }
+
+  function findScoreLead(history) {
+    // the lead is the sum of the difference of each checkpoint
+    var lead = history.map(function(cp) { return cp[1] - cp[2] }).reduce(function(acc, diff) { return acc + diff }, 0);
+    var leadinfo = '<div style="padding-left: 5px;">';
+    // res lead when we sum to a negative value
+    if (lead < 0) {
+      leadinfo += '<span class="res" style="font-weight: bold;">res lead: ' + localedigits(Math.abs(lead)) + 'mu</span></div>';
+    } else {
+      leadinfo += '<span class="enl" style="font-weight: bold;">enl lead: ' + localedigits(lead) + 'mu</span></div>';
+    }
+    return leadinfo;
+  }
   
   function regionScoreboardSuccess(data,dlg,logscale) {
     if (data.result === undefined) {
@@ -740,42 +771,18 @@ var setup = function() {
       agentTable += '<tr><td colspan="2"><i>no top agents</i></td></tr>';
     }
     agentTable += '</table>';
-  
-  
-    var maxAverage = Math.max(data.result.gameScore[0], data.result.gameScore[1], 1);
-    var teamRow = [];
-    for (var t=0; t<2; t++) {
-      var team = t===0 ? 'Enlightened' : 'Resistance';
-      var teamClass = t===0 ? 'enl' : 'res';
-      var teamCol = t===0 ? COLORS[TEAM_ENL] : COLORS[TEAM_RES];
-      var barSize = Math.round(data.result.gameScore[t]/maxAverage*200);
-      teamRow[t] = '<tr><th class="'+teamClass+'">'
-        +team+'</th><td class="'+teamClass+'">'
-        +localedigits(data.result.gameScore[t])+'</td><td><div style="background:'
-        +teamCol+'; width: '+barSize+'px; height: 1.3ex; border: 2px outset '
-        +teamCol+'"> </td></tr>';
-  
-    }
     
-    var history = data.result.scoreHistory;
-    // the lead is the sum of the difference of each checkpoint
-    var lead = history.map(function(cp) { return cp[1] - cp[2] }).reduce(function(acc, diff) { return acc + diff }, 0);
-    var leadinfo = '<div style="padding-left: 5px;">';
-    // res lead when we sum to a negative value
-    if (lead < 0) {
-      leadinfo += '<span class="res">res lead: ' + localedigits(Math.abs(lead)) + 'mu</span></div>';
-    } else {
-      leadinfo += '<span class="enl">enl lead: ' + localedigits(lead) + 'mu</span></div>';
-    }
+    var leadinfo = findScoreLead(data.result.scoreHistory);
   
     var first = PLAYER.team == 'RESISTANCE' ? 1 : 0;
-  
+    
+    var teamBars = generateTeamScoreBars(data);
     // we need some divs to make the accordion work properly
     dlg.html('<div class="cellscore">'
            +'<b>Region scores for '+data.result.regionName+'</b>'
            +'<div><a title="Search region" onclick="window.regionSelector()">Search region</a> OR '// lets add the ability to select another region
            +'<a title="Click to select region" onclick="window.regionClickSelector(event)">Select region from map</a>'
-           +'<table>'+teamRow[first]+teamRow[1-first]+'</table>'
+           +'<table>'+teamBars[first]+teamBars[1-first]+'</table>'
            +leadinfo // stick our info under the score bars
            +regionScoreboardScoreHistoryChart(data.result, logscale)
            +'<div class="time-to-checkpoint">'+ formattedTimeToCheckpoint(nextCheckpoint()) +'</div></div>'
@@ -808,6 +815,48 @@ var setup = function() {
       regionScoreboardSuccess(data, dlg, input.prop('checked'));
     });
   }
+
+  window.requestScore = function(latlng, success, fail) {
+    window.postAjax('getRegionScoreDetails', {
+      latE6:Math.round(latlng.lat*1E6),
+      lngE6:Math.round(latlng.lng*1E6)}, 
+      function(res){success(res);}, 
+      function(){fail()});
+  }
+
+  window.sidebarScoreSuccess = function(data) {
+    var teamBars = generateTeamScoreBars(data);
+    var first = PLAYER.team == 'RESISTANCE' ? 1 : 0;
+    $('#sidebarscore').html('<a onclick="window.regionScoreboard()" title="open detailed score info">\
+      <b style="padding: 5px;">' + data.result.regionName + '</b></a>\
+      <table>'+teamBars[first]+teamBars[1-first]+'</table>' + findScoreLead(data.result.scoreHistory));
+  }
+
+  window.sidebarScoreFailure = function() {
+   $('#sidebarscore').html('score request failed... <a onclick="window.retrySidebarScores()">retry</a>'); 
+  }
+
+  window.retrySidebarScores = function() {
+    requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
+  }
+
+  window.addHook('iitcLoaded', function() {
+    $('#searchwrapper').before('<div id="sidebarscore" style="min-height:60px;">score loading...</div>');
+    requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
+    addHook('pluginRegionScores', function(event) {
+      if (event.event !== 'checkpoint') return;
+      requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
+    });
+    //listen for moveend, but only request if the new region is different than the old region
+    var region = regionName(S2.S2Cell.FromLatLng(map.getCenter(),6));
+    map.on('moveend', function() {
+      console.log(region);
+      if (region !== regionName(S2.S2Cell.FromLatLng(map.getCenter(),6))) {
+        region = regionName(S2.S2Cell.FromLatLng(map.getCenter(),6));
+        requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
+      }
+    });
+  });
 }
 // PLUGIN END //////////////////////////////////////////////////////////
 setup.info = plugin_info; //add the script info data to the function as a property

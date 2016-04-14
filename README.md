@@ -9,6 +9,7 @@
 - adds a region search dialog
 - automatically refreshes the region scores after each checkpoint
 - adds a simple linear regression ("trend line") to the score graph
+- adds scores to the sidebar
 
 [click here to install](https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js)  
 [click here for the current development version](https://rawgit.com/hansolo669/iitc-tweaks/master/region-score-lead.user.js)

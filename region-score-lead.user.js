@@ -726,14 +726,15 @@ var setup = function() {
   };
   // end of crazy region code
 
-  function generateTeamScoreBars(data) {
+  function generateTeamScoreBars(data, maxwidth) {
+    var width = maxwidth?maxwidth:200;
     var maxAverage = Math.max(data.result.gameScore[0], data.result.gameScore[1], 1);
     var teamRow = [];
     for (var t=0; t<2; t++) {
       var team = t===0 ? 'Enlightened' : 'Resistance';
       var teamClass = t===0 ? 'enl' : 'res';
       var teamCol = t===0 ? COLORS[TEAM_ENL] : COLORS[TEAM_RES];
-      var barSize = Math.round(data.result.gameScore[t]/maxAverage*200);
+      var barSize = Math.round(data.result.gameScore[t]/maxAverage*width);
       teamRow[t] = '<tr><th class="'+teamClass+'">'
         +team+'</th><td class="'+teamClass+'">'
         +localedigits(data.result.gameScore[t])+'</td><td><div style="background:'
@@ -825,7 +826,7 @@ var setup = function() {
   }
 
   window.sidebarScoreSuccess = function(data) {
-    var teamBars = generateTeamScoreBars(data);
+    var teamBars = generateTeamScoreBars(data, 150);
     var first = PLAYER.team == 'RESISTANCE' ? 1 : 0;
     $('#sidebarscore').html('<a onclick="window.regionScoreboard()" title="open detailed score info">\
       <b style="padding: 5px;">' + data.result.regionName + '</b></a>\

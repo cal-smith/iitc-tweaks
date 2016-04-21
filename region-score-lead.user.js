@@ -2,7 +2,7 @@
 // @id             iitc-plugin-region-score-lead@hansolo669
 // @name           IITC plugin: region score lead
 // @category       Tweaks
-// @version        0.2.0
+// @version        0.2.1
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.meta.js
 // @downloadURL    https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js
@@ -343,13 +343,13 @@ var setup = function() {
   setInterval(function() {
     var nextcheckpoint = nextCheckpoint();
     var now = Date.now();
-    $('.time-to-checkpoint').each(function(i, elem) {
-      if (now > currentcheckpoint) {
-        currentcheckpoint = nextcheckpoint;
-        runHooks('pluginRegionScores', {event:'checkpoint'});
-      }
-      elem.innerHTML = formattedTimeToCheckpoint(nextCheckpoint());
-    });
+    if (now > currentcheckpoint) {
+      currentcheckpoint = nextcheckpoint;
+      runHooks('pluginRegionScores', {event:'checkpoint'});
+      $('.time-to-checkpoint').each(function(i, elem) {
+        elem.innerHTML = formattedTimeToCheckpoint(nextCheckpoint());
+      });
+    }
   }, 1000);
   pluginCreateHook('pluginRegionScores');
 
@@ -850,8 +850,7 @@ var setup = function() {
     //listen for moveend, but only request if the new region is different than the old region
     var region = regionName(S2.S2Cell.FromLatLng(map.getCenter(),6));
     map.on('moveend', function() {
-      console.log(region);
-      if (region !== regionName(S2.S2Cell.FromLatLng(map.getCenter(),6))) {
+      if (region !== regionName(S2.S2Cell.FromLatLng(map.getCenter(),6)) && map.getZoom() > 8) {
         region = regionName(S2.S2Cell.FromLatLng(map.getCenter(),6));
         requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
       }

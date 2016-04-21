@@ -2,7 +2,7 @@
 // @id             iitc-plugin-region-score-lead@hansolo669
 // @name           IITC plugin: region score lead
 // @category       Tweaks
-// @version        0.2.0
+// @version        0.2.1
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.meta.js
 // @downloadURL    https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js

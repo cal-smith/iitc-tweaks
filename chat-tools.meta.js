@@ -4,8 +4,8 @@
 // @category       Tweaks
 // @version        0.0.1
 // @namespace      https://github.com/hansolo669/iitc-tweaks
-// @updateURL      https://www.reallyawesomedomain.com/iitc-tweaks/chat-tools.meta.js
-// @downloadURL    https://www.reallyawesomedomain.com/iitc-tweaks/chat-tools.user.js
+// @updateURL      https://iitc.reallyawesomedomain.com/chat-tools.meta.js
+// @downloadURL    https://iitc.reallyawesomedomain.com/chat-tools.user.js
 // @description    Tools for chat including regex based filters and highligters
 // @include        https://www.ingress.com/intel*
 // @include        http://www.ingress.com/intel*

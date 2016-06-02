@@ -4,8 +4,8 @@
 // @category       Tweaks
 // @version        0.2.1
 // @namespace      https://github.com/hansolo669/iitc-tweaks
-// @updateURL      https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.meta.js
-// @downloadURL    https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js
+// @updateURL      https://iitc.reallyawesomedomain.com/region-score-lead.meta.js
+// @downloadURL    https://iitc.reallyawesomedomain.com/region-score-lead.user.js
 // @description    Small modification to the region scores to show the current mu lead.
 // @include        https://www.ingress.com/intel*
 // @include        http://www.ingress.com/intel*

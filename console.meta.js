@@ -4,8 +4,8 @@
 // @category       Debug
 // @version        0.0.1
 // @namespace      https://github.com/hansolo669/iitc-tweaks
-// @updateURL      https://www.reallyawesomedomain.com/iitc-tweaks/console.meta.js
-// @downloadURL    https://www.reallyawesomedomain.com/iitc-tweaks/console.user.js
+// @updateURL      https://iitc.reallyawesomedomain.com/console.meta.js
+// @downloadURL    https://iitc.reallyawesomedomain.com/console.user.js
 // @description    Utility to pipe the standard console back into IITC and esailly eval snippets
 // @include        https://www.ingress.com/intel*
 // @include        http://www.ingress.com/intel*

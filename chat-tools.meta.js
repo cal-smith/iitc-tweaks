@@ -2,7 +2,7 @@
 // @id             iitc-plugin-chat-tools@hansolo669
 // @name           IITC plugin: chat tools
 // @category       Tweaks
-// @version        0.0.1
+// @version        0.1.0
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://iitc.reallyawesomedomain.com/chat-tools.meta.js
 // @downloadURL    https://iitc.reallyawesomedomain.com/chat-tools.user.js

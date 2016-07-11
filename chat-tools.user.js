@@ -2,7 +2,7 @@
 // @id             iitc-plugin-chat-tools@hansolo669
 // @name           IITC plugin: chat tools
 // @category       Tweaks
-// @version        0.0.1
+// @version        0.1.0
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://iitc.reallyawesomedomain.com/chat-tools.meta.js
 // @downloadURL    https://iitc.reallyawesomedomain.com/chat-tools.user.js
@@ -27,7 +27,22 @@ if(typeof window.plugin !== 'function') window.plugin = function() {};
 if (!window.tools) {
   window.tools = {};
   window.tools.elem = document.querySelector.bind(document);
-  window.tools.elems = document.querySelectorAll.bind(document);
+  window.tools.elems = function (selector) {
+    var e = document.querySelectorAll(selector);
+    Object.defineProperty(e, 'innerHTML', {
+      get: function() { return this[0].innerHTML;}, 
+      set: function(v) { 
+        for (var i = 0; i < this.length; i++) this[i].innerHTML = v; 
+      }
+    });
+    Object.defineProperty(e, 'textContent', {
+      get: function() { return this[0].textContent;}, 
+      set: function(v) { 
+        for (var i = 0; i < this.length; i++) this[i].textContent = v; 
+      }
+    });
+    return e;
+  }
   window.tools.on = function (e, type, callback) { return e.addEventListener(type, callback); }
   window.tools.to_array = function(array) {
     return Array.prototype.slice.apply(array);
@@ -70,6 +85,12 @@ if (!window.tools) {
     }
     return this;
   };
+
+  window.tools.PersistantObject.prototype.clear = function() {
+    this._data = {};
+    window.localStorage.setItem(this._id, '');
+    return this;
+  }
 
   tools.PersistantArray = function(name) {
     var data = [];
@@ -123,10 +144,11 @@ window.plugin.chat_tools.filters = new tools.PersistantArray('chat-tools-filters
 window.plugin.chat_tools.highlighters = new tools.PersistantArray('chat-tools-highlighters');
 window.plugin.chat_tools.highlight_color = "#505050";
 window.plugin.chat_tools.hide_all = false;
+window.plugin.chat_tools.RENDERTIME = -1;
 // filter {matcher: 'string', tab: {'all':true, 'faction':true, 'alerts':true}, type: 'include|exclude'}
 // highlighter {matcher: 'string', tab: {'all':true, 'faction':true, 'alerts':true}, color: '#505050'}
 window.plugin.chat_tools.render_tab = function() {
-  //we'll add a hook to refresh the data when we switch to a chate pane
+  //we'll add a hook to refresh the data when we switch to a chat pane
   if (!window.useAndroidPanes()) {
     var tab = chat.getActive() === 'all'?'public':chat.getActive();
     chat.renderData(chat['_' + tab].data, 'chat' + chat.getActive(), false);
@@ -134,30 +156,41 @@ window.plugin.chat_tools.render_tab = function() {
 }
 
 window.plugin.chat_tools.open = function() {
-  var html = '<div><div id="chat-tools-tabs">\
-  <ul><li><a href="#filter-tab">filters</a></li><li><a href="#highlight-tab">highlighters</a></li></ul>\
-  <div id="filter-tab">\
-    <div id="filter-list" style="overflow: auto;height: ' + (window.useAndroidPanes()?window.innerHeight-100:'274') + 'px;"></div>\
-    <form id="filterform" style="bottom: 0;position: absolute;">\
-      <input type="text" placeholder="regex or search string">\
-      <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
-      <label>faction <input type="checkbox" checked> |&nbsp;</label>\
-      <label>alerts <input type="checkbox" checked> ]&nbsp;</label>\
-      <label title="show items matching this filter">include<input name="filtertype" type="radio"></label>\
-      <label title="hide items matching this filter">exclude<input name="filtertype" type="radio" checked></label>\
-      <button type="submit">add filter</button>\
-    </form></div>\
-  <div id="highlight-tab">\
-    <div id="highlighter-list" style="overflow: auto;height: ' + (window.useAndroidPanes()?window.innerHeight-100:'274') + 'px;"></div>\
-    <form id="highlighterform" style="bottom: 0;position: absolute;">\
-      <input type="text" placeholder="regex or search string">\
-      <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
-      <label>faction <input type="checkbox" checked> |&nbsp;</label>\
-      <label>alerts <input type="checkbox" checked> ]&nbsp;</label>\
-      <label>color <input type="color" value="#505050"></input></label>\
-      <button type="submit">add highlighter</button>\
-    </form></div>\
-  </div></div>';
+  var html = '<div>\
+  <div class="chat-tools-tabs">\
+    <ul>\
+      <li><a href="#filter-tab">filters</a></li>\
+      <li><a href="#highlight-tab">highlighters</a></li>\
+      <li><a href="#extras-tab">extras</a></li>\
+    </ul>\
+    <div id="filter-tab">\
+      <div class="filter-list" style="overflow: auto;height: ' + (window.useAndroidPanes()?window.innerHeight-100:'260') + 'px;"></div>\
+      <form id="filterform" style="bottom: 0;position: absolute;" onsubmit="window.plugin.chat_tools.add_tool(event, \'filter\')">\
+        <input type="text" placeholder="regex or search string">\
+        <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
+        <label>faction <input type="checkbox" checked> |&nbsp;</label>\
+        <label>alerts <input type="checkbox" checked> ]&nbsp;</label>\
+        <label title="show items matching this filter">include<input name="filtertype" type="radio"></label>\
+        <label title="hide items matching this filter">exclude<input name="filtertype" type="radio" checked></label>\
+        <button type="submit">add filter</button>\
+      </form>\
+    </div>\
+    <div id="highlight-tab">\
+      <div class="highlighter-list" style="overflow: auto;height: ' + (window.useAndroidPanes()?window.innerHeight-100:'260') + 'px;"></div>\
+      <form id="highlighterform" style="bottom: 0;position: absolute;" onsubmit="window.plugin.chat_tools.add_tool(event, \'highlighter\')">\
+        <input type="text" placeholder="regex or search string">\
+        <label>&nbsp;[ all <input type="checkbox" checked> |&nbsp;</label>\
+        <label>faction <input type="checkbox" checked> |&nbsp;</label>\
+        <label>alerts <input type="checkbox" checked> ]&nbsp;</label>\
+        <label>color <input type="color" value="#505050"></input></label>\
+        <button type="submit">add highlighter</button>\
+      </form>\
+    </div>\
+    <div id="extras-tab" class="extra-info">\
+      ' + window.plugin.chat_tools.render_extras() + '\
+    </div>\
+  </div>\
+  </div>';
   if (window.useAndroidPanes()) {
     $('<div id="chat-tools-pane" style="\
       background: transparent;\
@@ -182,9 +215,14 @@ window.plugin.chat_tools.open = function() {
                                                     <input type="checkbox" onclick="window.plugin.chat_tools.toggle_all()">\
                                                   </label>');
   }
-  $('#chat-tools-tabs').tabs();
-  tools.on(tools.elem('#filterform'), 'submit', function(event) {
-    event.preventDefault();
+  $('.chat-tools-tabs').tabs();
+  window.plugin.chat_tools.render_filterlist();
+  window.plugin.chat_tools.render_highlighterlist();
+}
+
+window.plugin.chat_tools.add_tool = function(event, from) {
+  event.preventDefault();
+  if (from === "filter") {
     window.plugin.chat_tools.filters.push({
       matcher: event.target[0].value,
       tab: {
@@ -194,13 +232,9 @@ window.plugin.chat_tools.open = function() {
       },
       type: event.target[4].checked?'include':'exclude'
     });
-    event.target[0].value = '';
-    window.plugin.chat_tools.render_tab();
     window.plugin.chat_tools.render_filterlist();
-  });
-  tools.on(tools.elem('#highlighterform'), 'submit', function(event) {
-     event.preventDefault();
-     window.plugin.chat_tools.highlighters.push({
+  } else if (from === "highlighter") {
+    window.plugin.chat_tools.highlighters.push({
       matcher: event.target[0].value,
       tab: {
         all: event.target[1].checked,
@@ -209,12 +243,10 @@ window.plugin.chat_tools.open = function() {
       },
       color: event.target[4].value
     });
-    event.target[0].value = '';
-    window.plugin.chat_tools.render_tab();
     window.plugin.chat_tools.render_highlighterlist();
-  });
-  window.plugin.chat_tools.render_filterlist();
-  window.plugin.chat_tools.render_highlighterlist();
+  }
+  event.target[0].value = '';
+  window.plugin.chat_tools.render_tab();
 }
 
 window.plugin.chat_tools.remove = function(type, index) {
@@ -268,32 +300,37 @@ window.plugin.chat_tools.render_filterlist = function() {
   filters.each(function(i, v) {
     list += '<li style="border-bottom: 1px solid lightslategrey;margin-bottom: 5px;padding-bottom: 5px;"\
               onchange="window.plugin.chat_tools.update(event, \'filter\', \'' + i + '\')">\
-              <a onclick="window.plugin.chat_tools.remove(\'filter\', \'' + i + '\')">[delete]</a>' 
-              + '<form><label> matches <input type="text" value="' + v.matcher + '"></label><br>'
-              + ' enabled for [ <label> all <input type="checkbox"' + (v.tab.all?'checked':'') + '></label> | '
-              + '<label> faction <input type="checkbox"' + (v.tab.faction?'checked':'') + '></label> | ' 
-              + '<label> alerts <input type="checkbox"' + (v.tab.alerts?'checked':'') + '></label> ] <br>'
-              + '<label> include <input type="radio" name="filtertypefor' + i + '" ' + (v.type === 'include'?'checked':'') + '></label>'
-              + '<label> exclude <input type="radio" name="filtertypefor' + i + '" ' + (v.type === 'exclude'?'checked':'') + '></label></form></li>';
+                <a onclick="window.plugin.chat_tools.remove(\'filter\', \'' + i + '\')">[delete]</a>\
+                <form>\
+                  <label> matches <input type="text" value="' + v.matcher + '"></label><br>\
+                  enabled for [ <label> all <input type="checkbox"' + (v.tab.all?'checked':'') + '></label> | \
+                  <label> faction <input type="checkbox"' + (v.tab.faction?'checked':'') + '></label> | \
+                  <label> alerts <input type="checkbox"' + (v.tab.alerts?'checked':'') + '></label> ] <br>\
+                  <label> include <input type="radio" name="filtertypefor' + i + '" ' + (v.type === 'include'?'checked':'') + '></label>\
+                  <label> exclude <input type="radio" name="filtertypefor' + i + '" ' + (v.type === 'exclude'?'checked':'') + '></label>\
+                </form>\
+              </li>';
   });
-  tools.elem('#filter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;">' + list + '</ul>';
+  tools.elems('.filter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;">' + list + '</ul>';
 }
 
 window.plugin.chat_tools.render_highlighterlist = function() {
   var highlighters = window.plugin.chat_tools.highlighters;
   var list = '';
-  highlighters.each(function(i, v) {// some way of getting the whole thing ... maybe wrapping in a form? yup - event.target.form[] 
-    // ... now i just have to override the array setter in the PersistantArray :P
-    list += '<li style="border-bottom: 1px solid lightslategrey;margin-bottom: 5px;padding-bottom: 5px;"\
+  highlighters.each(function(i, v) {
+    list += '<li style="border-bottom: 1px solid lightslategrey;margin-bottom: 5px;padding-bottom: 5px;" \
               onchange="window.plugin.chat_tools.update(event, \'highlighter\', \'' + i + '\')">\
-              <a onclick="window.plugin.chat_tools.remove(\'highlighter\', \'' + i + '\')">[delete]</a>' 
-              + '<form><label> matches <input type="text" value="' + v.matcher + '"></label><br>'
-              + ' enabled for [ <label> all <input type="checkbox"' + (v.tab.all?'checked':'') + '></label> | '
-              + '<label> faction <input type="checkbox"' + (v.tab.faction?'checked':'') + '></label> | ' 
-              + '<label> alerts <input type="checkbox"' + (v.tab.alerts?'checked':'') + '></label> ] <br>'
-              + '<label> color <input type="color" value="' + v.color + '"></label></form></li>';
+                <a onclick="window.plugin.chat_tools.remove(\'highlighter\', \'' + i + '\')">[delete]</a>\
+                <form>\
+                  <label> matches <input type="text" value="' + v.matcher + '"></label><br>\
+                  enabled for [ <label> all <input type="checkbox"' + (v.tab.all?'checked':'') + '></label> | \
+                  <label> faction <input type="checkbox"' + (v.tab.faction?'checked':'') + '></label> | \
+                  <label> alerts <input type="checkbox"' + (v.tab.alerts?'checked':'') + '></label> ] <br>\
+                  <label> color <input type="color" value="' + v.color + '"></label>\
+                </form>\
+              </li>';
   });
-  tools.elem('#highlighter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;">' + list + '</ul>';  
+  tools.elems('.highlighter-list').innerHTML = '<ul style="list-style: none;padding-left: 0;">' + list + '</ul>';  
 }
 
 window.plugin.chat_tools.pane_change = function(pane) {
@@ -306,6 +343,19 @@ window.plugin.chat_tools.pane_change = function(pane) {
     var tab = pane === 'all'?'public':pane;
     chat.renderData(chat['_' + tab].data, 'chat' + pane, false);
   }
+}
+
+window.plugin.chat_tools.render_extras = function() {
+  return '<div>' + Object.keys(chat._public.data).length + ' all messages</div>\
+  <div>' + Object.keys(chat._faction.data).length + ' faction messages</div>\
+  <div>' + Object.keys(chat._alerts.data).length + ' alerts</div>\
+  <div>last render took ' + window.plugin.chat_tools.RENDERTIME + 's</div>\
+  <div>\
+    <button onclick="alert(\'<textarea rows=30 cols=37>\' \+ JSON.stringify(chat._public.data) \+ \'</textarea>\')">raw all comms</button>\
+    <button onclick="alert(\'<textarea rows=30 cols=37>\' \+ JSON.stringify(chat._faction.data) \+ \'</textarea>\')">raw faction comms</button>\
+    <button onclick="alert(\'<textarea rows=30 cols=37>\' \+ JSON.stringify(chat._alerts.data) \+ \'</textarea>\')">raw alerts</button>\
+  </div>';
+  //<label> hide chat <input type="checkbox"/></label>
 }
 
 var setup = function() {
@@ -368,11 +418,12 @@ var setup = function() {
 
   // override the renderData function
   window.chat.renderData = function(data, element, likelyWereOldMsgs) {
+    window.plugin.chat_tools.RENDERTIME = Date.now();
     var elm = $('#'+element);
     if(elm.is(':hidden')) return;
 
     // discard guids and sort old to new
-    // TODO? stable sort, to preserve server message ordering? or sort by GUID if timestamps equal?
+    // TODO: optimizations? 
     var vals = $.map(data, function(v, k) { return [v]; });
     vals = vals.sort(function(a, b) { return a[0]-b[0]; });
 
@@ -412,6 +463,10 @@ var setup = function() {
     var scrollBefore = scrollBottom(elm);
     elm.html('<table>' + msgs + '</table>');
     chat.keepScrollPosition(elm, scrollBefore, likelyWereOldMsgs);
+    window.plugin.chat_tools.RENDERTIME = (((Date.now() - window.plugin.chat_tools.RENDERTIME)/1000)%60);
+    // ideally this would be a hook like "chatFinishedRender" and we'd pass all sorts of goodies in
+    // but it's not.
+    if (tools.elem('.extra-info')) tools.elems('.extra-info').innerHTML = window.plugin.chat_tools.render_extras();
   }
 
   // override writeDataToHash so we can get the raw message data

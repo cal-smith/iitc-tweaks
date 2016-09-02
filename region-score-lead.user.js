@@ -2,7 +2,7 @@
 // @id             iitc-plugin-region-score-lead@hansolo669
 // @name           IITC plugin: region score lead
 // @category       Tweaks
-// @version        0.2.2
+// @version        0.2.3
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://iitc.reallyawesomedomain.com/region-score-lead.meta.js
 // @downloadURL    https://iitc.reallyawesomedomain.com/region-score-lead.user.js
@@ -546,18 +546,28 @@ var setup = function() {
   function regionScoreboardScoreHistoryTable(result) {
     var history = result.scoreHistory;
     var table = '<table class="checkpoint_table" style="width: 370px;"> \
-      <thead><tr><th>Checkpoint</th><th>Enlightened</th><th>Resistance</th> \
-      <th>Lead</th></tr></thead>';
+      <thead><tr><th>CP</th><th>Enlightened</th><th>Resistance</th> \
+      <th>Enl Score</th><th>Res Score</th><th>Lead</th></tr></thead>';
     var lead = 0;
     var rows = '';
+    var score = {
+        enl: 0,
+        res: 0
+    };
+    var cp = 1;
     for(var i=history.length-1; i >= 0; i--) {
+      score.enl += parseInt(history[i][1]);
+      score.res += parseInt(history[i][2]);
       lead += history[i][1] - history[i][2];
       var checkpoint_lead = lead < 0?'res: ' + localedigits(Math.abs(lead)):'enl: ' + localedigits(lead);
-      rows = '<tr><td>' + history[i][0] 
-          + '</td><td>' + localedigits(history[i][1]) 
-          + '</td><td>' + localedigits(history[i][2]) 
-          + '</td><td class="' + (lead < 0?'res':'enl') + '" style="text-align: left;" >' + checkpoint_lead 
+      rows = '<tr><td>' + history[i][0]
+          + '</td><td>' + localedigits(history[i][1])
+          + '</td><td>' + localedigits(history[i][2])
+          + '</td><td>' + localedigits(score.enl/cp)
+          + '</td><td>' + localedigits(score.res/cp)
+          + '</td><td class="' + (lead < 0?'res':'enl') + '" style="text-align: left;" >' + checkpoint_lead
           + '</td></tr>' + rows;
+      cp++;
     }
     return table += rows +'</table>';
   }
@@ -793,13 +803,20 @@ var setup = function() {
            +'<div>'+agentTable+'</div>'
            +'</div>');
       
+    var score = {
+        enl: 0,
+        res: 0
+    };
     $('g.checkpoint', dlg).each(function(i, elem) {
       elem = $(elem);
-  
+      score.enl += parseInt(elem.attr('data-enl'));
+      score.res += parseInt(elem.attr('data-res'));
       var tooltip = 'CP:\t'+elem.attr('data-cp')
         + '\nEnl:\t' + localedigits(elem.attr('data-enl'))
         + '\nRes:\t' + localedigits(elem.attr('data-res'))
-        + '\nDiff:\t' + localedigits(Math.abs(elem.attr('data-res')-elem.attr('data-enl')));
+        + '\nDiff:\t' + localedigits(Math.abs(elem.attr('data-res')-elem.attr('data-enl')))
+        + '\nEnl Score:\t' + localedigits(score.enl/elem.attr('data-cp'))
+        + '\nRes Score:\t'+ localedigits(score.res/elem.attr('data-cp'));
       elem.tooltip({
         content: convertTextToTableMagic(tooltip),
         position: {my: "center bottom", at: "center top-10"}

@@ -2,7 +2,7 @@
 // @id             iitc-plugin-console@hansolo669
 // @name           IITC plugin: console
 // @category       Debug
-// @version        0.1.0
+// @version        0.1.1
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://iitc.reallyawesomedomain.com/console.meta.js
 // @downloadURL    https://iitc.reallyawesomedomain.com/console.user.js

@@ -2,19 +2,19 @@
 // @id             iitc-plugin-minimap@breunigs,hansolo669
 // @name           IITC plugin: Mini map
 // @category       Controls
-// @version        0.1.1.20160724.154202
+// @version        0.1.2
 // @namespace      https://github.com/jonatkins/ingress-intel-total-conversion
 // @updateURL      https://iitc.reallyawesomedomain.com/minimap-enhanced.user.js
 // @downloadURL    https://iitc.reallyawesomedomain.com/minimap-enhanced.user.js
 // @description    [jonatkins-2015-09-17-154202] Show a mini map on the corner of the map.
-// @include        https://www.ingress.com/intel*
-// @include        http://www.ingress.com/intel*
-// @match          https://www.ingress.com/intel*
-// @match          http://www.ingress.com/intel*
-// @include        https://www.ingress.com/mission/*
-// @include        http://www.ingress.com/mission/*
-// @match          https://www.ingress.com/mission/*
-// @match          http://www.ingress.com/mission/*
+// @include        https://*.ingress.com/intel*
+// @include        http://*.ingress.com/intel*
+// @match          https://*.ingress.com/intel*
+// @match          http://*.ingress.com/intel*
+// @include        https://*.ingress.com/mission/*
+// @include        http://*.ingress.com/mission/*
+// @match          https://*.ingress.com/mission/*
+// @match          http://*.ingress.com/mission/*
 // @grant          none
 // ==/UserScript==
 

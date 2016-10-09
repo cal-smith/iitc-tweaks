@@ -11,19 +11,20 @@
 - adds a simple linear regression ("trend line") to the score graph
 - adds scores to the sidebar
 
-[click here to install](https://www.reallyawesomedomain.com/iitc-tweaks/region-score-lead.user.js)  
+[click here to install](https://iitc.reallyawesomedomain.com/region-score-lead.user.js)  
 [click here for the current development version](https://rawgit.com/hansolo669/iitc-tweaks/master/region-score-lead.user.js)
 
 #####Chat tools:
 - regex based filters and highlighters
 
+[click here to install](https://iitc.reallyawesomedomain.com/chat-tools.user.js)
 [click here for the current development version](https://rawgit.com/hansolo669/iitc-tweaks/master/chat-tools.user.js)
 
 #####console:
 - pipes the standard console back into an iitc window
 - input box for commands; complete with history (arrow up/arrow down)
 
-[click here to install](https://www.reallyawesomedomain.com/iitc-tweaks/console.user.js)  
+[click here to install](https://iitc.reallyawesomedomain.com/console.user.js)  
 [click here for the current development version](https://rawgit.com/hansolo669/iitc-tweaks/master/console.user.js)
 
 #####Draw tools sync:

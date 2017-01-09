@@ -2,7 +2,7 @@
 // @id             iitc-plugin-region-score-lead@hansolo669
 // @name           IITC plugin: region score lead
 // @category       Tweaks
-// @version        0.2.4
+// @version        0.2.5
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://iitc.reallyawesomedomain.com/region-score-lead.meta.js
 // @downloadURL    https://iitc.reallyawesomedomain.com/region-score-lead.user.js
@@ -24,6 +24,7 @@ if(typeof window.plugin !== 'function') window.plugin = function() {};
 
 // PLUGIN START ////////////////////////////////////////////////////////
 var setup = function() {
+  window.plugin.regionScore = {};
   window.localedigits = function(d) {
     if(!parseInt(d)) return d;
     return parseInt(d).toLocaleString();
@@ -545,8 +546,8 @@ var setup = function() {
   
   function regionScoreboardScoreHistoryTable(result) {
     var history = result.scoreHistory;
-    var table = '<table class="checkpoint_table" style="width: 370px;"> \
-      <thead><tr><th>CP</th><th>Enlightened</th><th>Resistance</th> \
+    var table = '<table class="checkpoint_table" style="width: 426px;"> \
+      <thead><tr><th>CP</th><th>Enl</th><th>Res</th> \
       <th>Enl Score</th><th>Res Score</th><th>Lead</th></tr></thead>';
     var lead = 0;
     var rows = '';
@@ -796,7 +797,8 @@ var setup = function() {
            +'<table>'+teamBars[first]+teamBars[1-first]+'</table>'
            +leadinfo // stick our info under the score bars
            +regionScoreboardScoreHistoryChart(data.result, logscale)
-           +'<div class="time-to-checkpoint">'+ formattedTimeToCheckpoint(nextCheckpoint()) +'</div></div>'
+           +'<div class="time-to-checkpoint">'+ formattedTimeToCheckpoint(nextCheckpoint()) +'</div>'
+           +'<div><button onclick="window.plugin.regionScore.toggleSidebar()">toggle sidebar view</button></div></div>'
            +'<b>Checkpoint overview</b>'
            +'<div>'+regionScoreboardScoreHistoryTable(data.result)+'</div>'
            +'<b>Top agents</b>'
@@ -833,7 +835,8 @@ var setup = function() {
       regionScoreboardSuccess(data, dlg, input.prop('checked'));
     });
   }
-
+  //so this could probably be used in requestRegionScores...
+  // cause right now it's just used here, but it would kinda simplify requestRegionScores
   window.requestScore = function(latlng, success, fail) {
     window.postAjax('getRegionScoreDetails', {
       latE6:Math.round(latlng.lat*1E6),
@@ -858,21 +861,50 @@ var setup = function() {
     requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
   }
 
-  window.addHook('iitcLoaded', function() {
+  var sidebarMoveHandler = function() {
+    if (window.plugin.regionScore.region !== regionName(S2.S2Cell.FromLatLng(map.getCenter(),6)) && map.getZoom() > 8) {
+      window.plugin.regionScore.region = regionName(S2.S2Cell.FromLatLng(map.getCenter(),6));
+      requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
+    }
+  }
+
+  var sidebarRequestHandler = function(event) {
+    if (event.event !== 'checkpoint') return;
+      requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
+  }
+
+  var initSidebar = function() {
     $('#searchwrapper').before('<div id="sidebarscore" style="min-height:60px;">score loading...</div>');
     requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
-    addHook('pluginRegionScores', function(event) {
-      if (event.event !== 'checkpoint') return;
-      requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
-    });
+    addHook('pluginRegionScores', sidebarRequestHandler);
     //listen for moveend, but only request if the new region is different than the old region
-    var region = regionName(S2.S2Cell.FromLatLng(map.getCenter(),6));
-    map.on('moveend', function() {
-      if (region !== regionName(S2.S2Cell.FromLatLng(map.getCenter(),6)) && map.getZoom() > 8) {
-        region = regionName(S2.S2Cell.FromLatLng(map.getCenter(),6));
-        requestScore(map.getCenter(), sidebarScoreSuccess, sidebarScoreFailure);
-      }
-    });
+    map.on('moveend', sidebarMoveHandler);
+    window.plugin.regionScore.region = regionName(S2.S2Cell.FromLatLng(map.getCenter(),6));
+  };
+
+  var removeSidebar = function() {
+    $('#sidebarscore').remove();
+    removeHook('pluginRegionScores', sidebarRequestHandler);
+    map.off('moveend', sidebarMoveHandler);
+  }
+
+  window.plugin.regionScore.toggleSidebar = function() {
+    if (localStorage['plugin-region-scores-sidebar'] === "false") {
+      localStorage['plugin-region-scores-sidebar'] = "true";
+      initSidebar();
+    } else {
+      localStorage['plugin-region-scores-sidebar'] = "false";
+      removeSidebar();
+    }
+  }
+
+  window.addHook('iitcLoaded', function() {
+    if (!localStorage['plugin-region-scores-sidebar']) {
+      localStorage['plugin-region-scores-sidebar'] = true;
+    }
+    if (localStorage['plugin-region-scores-sidebar'] === "true") {
+      initSidebar();
+    }
   });
 }
 // PLUGIN END //////////////////////////////////////////////////////////

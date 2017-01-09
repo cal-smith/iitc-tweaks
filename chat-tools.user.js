@@ -2,7 +2,7 @@
 // @id             iitc-plugin-chat-tools@hansolo669
 // @name           IITC plugin: chat tools
 // @category       Tweaks
-// @version        0.1.1
+// @version        0.1.2
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://iitc.reallyawesomedomain.com/chat-tools.meta.js
 // @downloadURL    https://iitc.reallyawesomedomain.com/chat-tools.user.js
@@ -361,8 +361,12 @@ window.plugin.chat_tools.render_extras = function() {
 var setup = function() {
   // tools.append(tools.elem('#chatcontrols'), tools.template(['a', {text: 'tools', onclick='window.plugin.chat_tools.open()'}]));
   tools.elem('#chatcontrols').innerHTML += '<a onclick="window.plugin.chat_tools.open()">tools</a>';
-  // re-run setup to re-bind the tab change handlers
-  chat.setup();
+  // re-bind the tab change handlers
+  $('#chatcontrols a:first').click(window.chat.toggle);
+  $('#chatcontrols a').each(function(ind, elm) {
+    if($.inArray($(elm).text(), ['all', 'faction', 'alerts']) !== -1)
+      $(elm).click(window.chat.chooser);
+  });
   if (window.useAndroidPanes()) {
     android.addPane('chat-tools-pane', 'Chat Tools');
     addHook('paneChanged', window.plugin.chat_tools.pane_change);

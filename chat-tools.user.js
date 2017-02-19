@@ -2,7 +2,7 @@
 // @id             iitc-plugin-chat-tools@hansolo669
 // @name           IITC plugin: chat tools
 // @category       Tweaks
-// @version        0.1.2
+// @version        0.1.3
 // @namespace      https://github.com/hansolo669/iitc-tweaks
 // @updateURL      https://iitc.reallyawesomedomain.com/chat-tools.meta.js
 // @downloadURL    https://iitc.reallyawesomedomain.com/chat-tools.user.js
@@ -150,8 +150,9 @@ window.plugin.chat_tools.RENDERTIME = -1;
 window.plugin.chat_tools.render_tab = function() {
   //we'll add a hook to refresh the data when we switch to a chat pane
   if (!window.useAndroidPanes()) {
-    var tab = chat.getActive() === 'all'?'public':chat.getActive();
-    chat.renderData(chat['_' + tab].data, 'chat' + chat.getActive(), false);
+    var pane = localStorage["iitc-chat-tab"];
+    var tab = pane === 'all'?'public':pane;
+    chat.renderData(chat['_' + tab].data, 'chat' + pane, false);
   }
 }
 
@@ -364,31 +365,31 @@ var setup = function() {
   // re-bind the tab change handlers
   $('#chatcontrols a:first').click(window.chat.toggle);
   $('#chatcontrols a').each(function(ind, elm) {
-    if($.inArray($(elm).text(), ['all', 'faction', 'alerts']) !== -1)
+    if($.inArray($(elm).text(), ['all', 'faction', 'alerts']) !== -1) {
       $(elm).click(window.chat.chooser);
+    }
   });
   if (window.useAndroidPanes()) {
     android.addPane('chat-tools-pane', 'Chat Tools');
     addHook('paneChanged', window.plugin.chat_tools.pane_change);
   }
 
-  var match_filter = function(message) {
+  var match_filter = function(message, active) {
     if (plugin.chat_tools.filters.length > 0) {
       var filters = plugin.chat_tools.filters;
       //var matches = []
       for (var i = 0; i < filters.length; i++) {
-        if(filters[i].tab[chat.getActive()] && RegExp(filters[i].matcher, 'gi').test(message)) return filters[i];
+        if(filters[i].tab[active] && RegExp(filters[i].matcher, 'gi').test(message)) return filters[i];
       }
     }
     return false;
   };
 
-  var match_highlight = function(message) {
-    //console.log(message);
+  var match_highlight = function(message, active) {
     if (plugin.chat_tools.highlighters.length > 0) {
       var highlighters = plugin.chat_tools.highlighters;
       for (var i = 0; i < highlighters.length; i++) {
-        if(highlighters[i].tab[chat.getActive()] && RegExp(highlighters[i].matcher, 'gi').test(message)) return highlighters[i];
+        if(highlighters[i].tab[active] && RegExp(highlighters[i].matcher, 'gi').test(message)) return highlighters[i];
       }
     }
     return false;
@@ -404,36 +405,41 @@ var setup = function() {
 
     // help cursor via “#chat time”
     var t = '<time title="'+tb+'" data-timestamp="'+time+'">'+ta+'</time>';
-    if ( msgToPlayer )
-    {
+    if (msgToPlayer) {
       t = '<div class="pl_nudge_date">' + t + '</div><div class="pl_nudge_pointy_spacer"></div>';
     }
-    if (systemNarrowcast)
-    {
+    if (systemNarrowcast) {
       msg = '<div class="system_narrowcast">' + msg + '</div>';
     }
     var color = COLORS[team];
     if (nick === window.PLAYER.nickname) color = '#fd6';    // highlight things said/done by the player in a unique colour 
                                                             //  (similar to @player mentions from others in the chat text itself)
-    var s = 'style="cursor:pointer; color:'+color+'"';
-    var i = ['<span class="invisep">&lt;</span>', '<span class="invisep">&gt;</span>'];
-    return '<td>'+t+'</td><td>'+i[0]+'<mark class="nickname" ' + s + '>'+ nick+'</mark>'+i[1]+'</td><td>'+msg+'</td>';
+    var styleAttr = 'style="cursor:pointer; color:'+color+'"';
+    var seperators = ['<span class="invisep">&lt;</span>', '<span class="invisep">&gt;</span>'];
+    return '<td>'+t+'</td><td>'+seperators[0]+'<mark class="nickname" ' + styleAttr + '>'+ nick+'</mark>'+seperators[1]+'</td><td>'+msg+'</td>';
   }
 
   // override the renderData function
   window.chat.renderData = function(data, element, likelyWereOldMsgs) {
     window.plugin.chat_tools.RENDERTIME = Date.now();
-    var elm = $('#'+element);
-    if(elm.is(':hidden')) return;
+    var elem = document.querySelector("#" + element);
+    if (elem.style.display === "none") return;
 
     // discard guids and sort old to new
     // TODO: optimizations? 
-    var vals = $.map(data, function(v, k) { return [v]; });
+    var keys = Object.keys(data);
+    var vals = [];
+    for (var i = 0; i < keys.length; i++) {
+      vals.push(data[keys[i]]);
+    }
     vals = vals.sort(function(a, b) { return a[0]-b[0]; });
+
+    //grab the currently active tab
+    var active = localStorage["iitc-chat-tab"];
 
     function highlight_message(msg) {
        // if the message matches a highlighter, highlight it
-      var highlight = match_highlight(msg[4])
+      var highlight = match_highlight(msg[4], active)
       if(highlight) {
         // do the highlight dance
         var color = highlight.color;
@@ -446,12 +452,13 @@ var setup = function() {
     // render to string with date separators inserted
     var msgs = '';
     var prevTime = null;
-    $.each(vals, function(ind, msg) {
+    for (var i = 0; i < vals.length; i++) {
+      var msg = vals[i];
       var nextTime = new Date(msg[0]).toLocaleDateString();
       if(prevTime && prevTime !== nextTime)
         msgs += chat.renderDivider(nextTime);
       prevTime = nextTime;
-      var filter = match_filter(msg[4]);
+      var filter = match_filter(msg[4], active);
       // filter type is include, just render the message
       if (filter && filter.type === 'include') {
           msgs += highlight_message(msg);
@@ -462,11 +469,12 @@ var setup = function() {
           msgs += highlight_message(msg);
         }
       }
-    });
+    };
 
-    var scrollBefore = scrollBottom(elm);
-    elm.html('<table>' + msgs + '</table>');
-    chat.keepScrollPosition(elm, scrollBefore, likelyWereOldMsgs);
+    //                  scroll bottom \/
+    var scrollBefore = elem.scrollHeight - elem.offsetHeight - elem.scrollTop;
+    elem.innerHTML = '<table>' + msgs + '</table>';
+    chat.keepScrollPosition(elem, scrollBefore, likelyWereOldMsgs);
     window.plugin.chat_tools.RENDERTIME = (((Date.now() - window.plugin.chat_tools.RENDERTIME)/1000)%60);
     // ideally this would be a hook like "chatFinishedRender" and we'd pass all sorts of goodies in
     // but it's not.
@@ -559,6 +567,29 @@ var setup = function() {
       storageHash.data[json[0]] = [json[1], auto, chat.renderMsg(msg, nick, time, team, msgToPlayer, systemNarrowcast), nick, json[2].plext.text];
 
     });
+  }
+
+  // override keepScrollPosition to eliminate some of the expensive jquery
+  // contains the logic to keep the correct scroll position.
+  window.chat.keepScrollPosition = function(box, scrollBefore, isOldMsgs) {
+    // If scrolled down completely, keep it that way so new messages can
+    // be seen easily. If scrolled up, only need to fix scroll position
+    // when old messages are added. New messages added at the bottom don’t
+    // change the view and enabling this would make the chat scroll down
+    // for every added message, even if the user wants to read old stuff.
+
+    if(box.style.display === "none" && !isOldMsgs) {
+      box = $(box);
+      box.data('needsScrollTop', 99999999);
+      return;
+    }
+
+    if(scrollBefore === 0 || isOldMsgs) {
+      box.scrollTop = box.scrollTop + ((box.scrollHeight - box.offsetHeight - box.scrollTop) - scrollBefore)
+      box = $(box);
+      box.data('ignoreNextScroll', true);
+      // box.scrollTop(box.scrollTop() + (scrollBottom(box)-scrollBefore));
+    }
   }
 
 };
